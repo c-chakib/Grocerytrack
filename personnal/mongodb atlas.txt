@@ -1,0 +1,3 @@
+rAyapVtECzJyWZSM
+
+mongodb+srv://grocerytrack:<rAyapVtECzJyWZSM>@cluster.8otkjar.mongodb.net/?retryWrites=true&w=majority&appName=Cluster
