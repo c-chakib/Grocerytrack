@@ -1,0 +1,29 @@
+# Node modules (never commit, too big!)
+node_modules/
+package-lock.json
+
+# Environment variables (secret keys!)
+.env
+.env.local
+.env*.local
+
+# Build outputs
+dist/
+build/
+.angular/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Angular
+.ng/
