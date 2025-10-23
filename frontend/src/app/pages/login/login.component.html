@@ -1,0 +1,58 @@
+<!-- Login Page -->
+<div class="login-container">
+  <div class="login-card">
+    <h1>🥬 GroceryTrack</h1>
+    <h2>Login</h2>
+
+    <!-- Error Message -->
+    @if (authService.error()) {
+      <div class="error-alert">
+        {{ authService.error() }}
+      </div>
+    }
+
+    <!-- Login Form -->
+    <form (ngSubmit)="onLogin()">
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          [(ngModel)]="email"
+          name="email"
+          placeholder="chakib@example.com"
+          required
+        />
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          [(ngModel)]="password"
+          name="password"
+          placeholder="Enter password"
+          required
+        />
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" [disabled]="authService.isLoading()">
+        @if (authService.isLoading()) {
+          Loading...
+        } @else {
+          Login
+        }
+      </button>
+    </form>
+
+    <!-- Link to Register -->
+    <p>
+      Don't have an account?
+      <a routerLink="/register">Register here</a>
+    </p>
+  </div>
+</div>

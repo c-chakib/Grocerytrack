@@ -1,4 +1,4 @@
-# GroceryTrack - Food Expiration Tracker
+<!-- # GroceryTrack - Food Expiration Tracker
 
 MEAN Stack Project (MongoDB, Express, Angular, Node.js)
 
@@ -20,4 +20,4 @@ ng serve
 ## Deployment
 - Backend: Render
 - Frontend: Vercel
-- Database: MongoDB Atlas
+- Database: MongoDB Atlas -->

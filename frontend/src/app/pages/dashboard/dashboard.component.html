@@ -1,0 +1,282 @@
+<!-- Dashboard Component - Complete Phase 3 with Filtering, Sorting, Search -->
+<div class="dashboard-container">
+  <!-- ===== HEADER ===== -->
+  <header class="dashboard-header">
+    <div class="header-left">
+      <h1>🥬 GroceryTrack</h1>
+    </div>
+    <div class="header-right">
+      <span class="user-info">👋 {{ userName() }}</span>
+      <button class="btn-logout" (click)="authService.logout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="dashboard-content">
+    <!-- ===== STATISTICS ===== -->
+    <div class="stats-container">
+      <div class="stat-card">
+        <h3>Total Items</h3>
+        <p class="stat-number">{{ groceries().length }}</p>
+      </div>
+      <div class="stat-card">
+        <h3>Expiring Soon</h3>
+        <p class="stat-number">{{ expiringCount() }}</p>
+      </div>
+      <div class="stat-card">
+        <h3>Expired</h3>
+        <p class="stat-number">{{ expiredCount() }}</p>
+      </div>
+    </div>
+
+    <!-- ===== FILTER & SEARCH BAR ===== -->
+    <div class="filter-search-bar">
+      <!-- Add Button -->
+      <button class="btn btn-primary" (click)="openAddModal()" [disabled]="isLoading()">
+        ➕ Add Grocery
+      </button>
+
+      <!-- Category Filter -->
+      <select 
+        class="filter-select"
+        [value]="selectedCategory()"
+        (change)="onCategoryChange($event)"
+      >
+        <option value="all">All Categories</option>
+        <option value="Dairy">🥛 Dairy</option>
+        <option value="Vegetables">🥬 Vegetables</option>
+        <option value="Fruits">🍎 Fruits</option>
+        <option value="Meat">🍖 Meat</option>
+        <option value="Pantry">📦 Pantry</option>
+        <option value="Frozen">❄️ Frozen</option>
+        <option value="Other">📝 Other</option>
+      </select>
+
+      <!-- Sort Options -->
+      <select 
+        class="filter-select"
+        [value]="sortBy()"
+        (change)="handleSortChange($event)"
+      >
+        <option value="expiration-asc">📅 Expiring Soon First</option>
+        <option value="expiration-desc">📅 Latest First</option>
+      </select>
+
+      <!-- Search Box -->
+      <input 
+        type="text"
+        class="search-input"
+        placeholder="🔍 Search groceries..."
+        [value]="searchQuery()"
+        (input)="onSearchChange($any($event.target).value)"
+      />
+
+      <!-- Clear Filters Button -->
+      <button 
+        class="btn btn-secondary btn-sm"
+        (click)="clearAllFilters()"
+        *ngIf="selectedCategory() !== 'all' || searchQuery() !== ''"
+      >
+        🧹 Clear Filters
+      </button>
+    </div>
+
+    <!-- ===== LOADING STATE ===== -->
+    <div *ngIf="isLoading()" class="loading-state">
+      ⏳ Loading groceries...
+    </div>
+
+    <!-- ===== EMPTY STATE - NO MATCHES ===== -->
+    <div *ngIf="!isLoading() && filteredGroceries().length === 0 && groceries().length > 0" class="empty-state">
+      <p>🔍 No groceries match your filters. Try adjusting your search!</p>
+    </div>
+
+    <!-- ===== EMPTY STATE - NO DATA ===== -->
+    <div *ngIf="!isLoading() && groceries().length === 0" class="empty-state">
+      <p>📭 No groceries yet. Click "Add Grocery" to get started!</p>
+    </div>
+
+    <!-- ===== GROCERIES GRID ===== -->
+    <div *ngIf="!isLoading() && filteredGroceries().length > 0" class="groceries-grid">
+      <div *ngFor="let grocery of filteredGroceries()" 
+           class="grocery-card"
+           [style.border-left-color]="getStatusColor(getStatus(grocery.expirationDate))">
+        
+        <!-- Card Header -->
+        <div class="card-header">
+          <h3>{{ grocery.name }}</h3>
+          <span class="badge" [ngClass]="getStatus(grocery.expirationDate)">
+            {{ getStatus(grocery.expirationDate) | uppercase }}
+          </span>
+        </div>
+
+        <!-- Card Details -->
+        <div class="card-details">
+          <p><strong>Category:</strong> {{ grocery.category }}</p>
+          <p>
+            <strong>Expires:</strong> {{ grocery.expirationDate | date: 'MMM dd, yyyy' }} 
+            <span class="days-until" [ngClass]="getStatus(grocery.expirationDate)">
+              ({{ getDaysUntilExpiry(grocery.expirationDate) }} days)
+            </span>
+          </p>
+          <p><strong>Qty:</strong> {{ grocery.quantity }} {{ grocery.unit }}</p>
+          <p><strong>Location:</strong> {{ grocery.location }}</p>
+          <p *ngIf="grocery.notes"><strong>Notes:</strong> {{ grocery.notes }}</p>
+        </div>
+
+        <!-- Card Actions -->
+        <div class="card-actions">
+          <button class="btn btn-sm btn-edit" (click)="openEditModal(grocery)">
+            ✏️ Edit
+          </button>
+          <button class="btn btn-sm btn-delete" (click)="openDeleteConfirm(grocery)">
+            🗑️ Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== ADD/EDIT MODAL ===== -->
+  <div *ngIf="showAddModal() || showEditModal()" class="modal-overlay" (click)="closeModals()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h2>{{ showEditModal() ? '✏️ Edit Grocery' : '➕ Add Grocery' }}</h2>
+        <button class="btn-close" (click)="closeModals()">✕</button>
+      </div>
+
+      <!-- Modal Form -->
+      <form [formGroup]="groceryForm" class="modal-form">
+        <!-- Name (Required) -->
+        <div class="form-group">
+          <label>Name *</label>
+          <input 
+            type="text" 
+            formControlName="name" 
+            placeholder="e.g., Milk, Tomato, Chicken"
+            class="form-input"
+          />
+          <small *ngIf="groceryForm.get('name')?.hasError('required')" class="error">
+            Name is required
+          </small>
+          <small *ngIf="groceryForm.get('name')?.hasError('minlength')" class="error">
+            Name must be at least 2 characters
+          </small>
+        </div>
+
+        <!-- Category -->
+        <div class="form-group">
+          <label>Category</label>
+          <select formControlName="category" class="form-input">
+            <option value="Dairy">🥛 Dairy</option>
+            <option value="Vegetables">🥬 Vegetables</option>
+            <option value="Fruits">🍎 Fruits</option>
+            <option value="Meat">🍖 Meat</option>
+            <option value="Pantry">📦 Pantry</option>
+            <option value="Frozen">❄️ Frozen</option>
+            <option value="Other">📝 Other</option>
+          </select>
+        </div>
+
+        <!-- Expiration Date (Required) -->
+        <div class="form-group">
+          <label>Expiration Date *</label>
+          <input 
+            type="date" 
+            formControlName="expirationDate"
+            class="form-input"
+          />
+          <small *ngIf="groceryForm.get('expirationDate')?.hasError('required')" class="error">
+            Expiration date is required
+          </small>
+        </div>
+
+        <!-- Quantity & Unit -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quantity</label>
+            <input 
+              type="number" 
+              formControlName="quantity" 
+              min="1"
+              class="form-input"
+            />
+          </div>
+          <div class="form-group">
+            <label>Unit</label>
+            <select formControlName="unit" class="form-input">
+              <option value="pieces">pieces</option>
+              <option value="L">L (Liters)</option>
+              <option value="ml">ml</option>
+              <option value="kg">kg</option>
+              <option value="g">g</option>
+              <option value="packs">packs</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="form-group">
+          <label>Location</label>
+          <select formControlName="location" class="form-input">
+            <option value="Fridge">❄️ Fridge</option>
+            <option value="Freezer">🧊 Freezer</option>
+            <option value="Pantry">📦 Pantry</option>
+            <option value="Counter">🍽️ Counter</option>
+          </select>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea 
+            formControlName="notes" 
+            placeholder="Any additional notes..."
+            class="form-input"
+            rows="3"
+          ></textarea>
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeModals()">
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-primary"
+            (click)="showEditModal() ? updateGrocery() : addGrocery()"
+            [disabled]="groceryForm.invalid || isLoading()"
+          >
+            {{ showEditModal() ? '✏️ Update Grocery' : '➕ Add Grocery' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== DELETE CONFIRMATION MODAL ===== -->
+  <div *ngIf="showDeleteConfirm()" class="modal-overlay" (click)="closeModals()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>🗑️ Delete Grocery?</h2>
+        <button class="btn-close" (click)="closeModals()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <p>Are you sure you want to delete <strong>{{ selectedGrocery()?.name }}</strong>?</p>
+        <p class="warning">This action cannot be undone.</p>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" (click)="closeModals()">
+          Cancel
+        </button>
+        <button class="btn btn-delete" (click)="deleteGrocery()" [disabled]="isLoading()">
+          🗑️ Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

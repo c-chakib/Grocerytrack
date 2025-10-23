@@ -1,0 +1,11 @@
+/* Main App Component - Global Styles */
+
+:host {
+  display: block;
+}
+
+/* Ensure full height */
+app-root {
+  display: block;
+  height: 100%;
+}
