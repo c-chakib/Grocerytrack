@@ -4,6 +4,8 @@
 import Grocery from '../models/Grocery.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { ApiError } from '../utils/apiError.js';
+import { emitToUser } from '../config/socket.js';
+
 
 // Helper: Calculate grocery status
 const calculateStatus = (expirationDate) => {
@@ -41,7 +43,10 @@ export const createGrocery = async (req, res, next) => {
     });
 
     await grocery.save();
-
+        // ADD SOCKET EMIT
+        if (req.app.locals.io) {
+      emitToUser(req.app.locals.io, req.userId, 'grocery:created', grocery);
+    }
     res.status(201).json(new ApiResponse(201, grocery, "Grocery created successfully"));
   } catch (error) {
     next(error);
@@ -151,7 +156,10 @@ export const updateGrocery = async (req, res, next) => {
       { ...req.body, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
-
+            // ADD SOCKET EMIT
+        if (req.app.locals.io) {
+      emitToUser(req.app.locals.io, req.userId, 'grocery:updated', grocery);
+    }
     res.json(new ApiResponse(200, grocery, "Grocery updated successfully"));
   } catch (error) {
     next(error);
@@ -170,7 +178,10 @@ export const deleteGrocery = async (req, res, next) => {
     }
 
     await Grocery.findByIdAndDelete(req.params.id);
-
+            // ADD SOCKET EMIT
+        if (req.app.locals.io) {
+      emitToUser(req.app.locals.io, req.userId, 'grocery:deleted', { id: req.params.id });
+    }
     res.json(new ApiResponse(200, null, "Grocery deleted successfully"));
   } catch (error) {
     next(error);

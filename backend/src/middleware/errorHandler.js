@@ -1,8 +1,17 @@
 // Global Error Handler Middleware (Axis 1 Best Practice)
 import { ApiError } from '../utils/apiError.js';
+import { logger } from '../utils/logger.js'; 
 
-export const errorHandler = (err, _req, res, _next) => {
+export const errorHandler = (err, req, res, _next) => {
   let error = err;
+
+logger.error('Error occurred:', {
+message: err.message,
+  stack: err.stack,
+  path: req.path,
+  method: req.method,
+  userId: req.userId || 'anonymous'
+});
 
   // Handle validation errors from Mongoose
   if (err.name === 'ValidationError') {

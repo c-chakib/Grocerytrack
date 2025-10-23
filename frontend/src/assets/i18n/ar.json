@@ -1,0 +1,94 @@
+{
+  "app": {
+    "title": "GroceryTrack",
+    "welcome": "مرحباً بك في GroceryTrack",
+    "description": "تتبع مشترياتك ولا تفوت الأساسيات مرة أخرى!"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "register": "التسجيل",
+    "logout": "تسجيل الخروج",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "name": "الاسم",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "loginTitle": "تسجيل الدخول",
+    "registerTitle": "إنشاء حساب",
+    "loginButton": "تسجيل الدخول",
+    "registerButton": "إنشاء حساب",
+    "noAccount": "ليس لديك حساب؟",
+    "hasAccount": "لديك حساب بالفعل؟",
+    "loginSuccess": "تم تسجيل الدخول بنجاح!",
+    "registerSuccess": "تم التسجيل بنجاح!",
+    "loginError": "فشل في تسجيل الدخول",
+    "registerError": "فشل في التسجيل"
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "welcome": "مرحباً بعودتك",
+    "addGrocery": "إضافة منتج",
+    "search": "البحث في المنتجات...",
+    "filterByCategory": "تصفية حسب الفئة",
+    "sortBy": "ترتيب حسب",
+    "clearFilters": "مسح المرشحات",
+    "totalGroceries": "إجمالي المنتجات",
+    "expiringSoon": "ينتهي قريباً",
+    "expired": "منتهي الصلاحية",
+    "fresh": "طازج",
+    "name": "الاسم",
+    "category": "الفئة",
+    "expirationDate": "تاريخ الانتهاء",
+    "quantity": "الكمية",
+    "location": "الموقع",
+    "status": "الحالة",
+    "actions": "الإجراءات",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "confirmDelete": "هل أنت متأكد من حذف هذا المنتج؟",
+    "deleteConfirmTitle": "تأكيد الحذف",
+    "addSuccess": "تم إضافة المنتج بنجاح!",
+    "updateSuccess": "تم تحديث المنتج بنجاح!",
+    "deleteSuccess": "تم حذف المنتج بنجاح!",
+    "addError": "فشل في إضافة المنتج",
+    "updateError": "فشل في تحديث المنتج",
+    "deleteError": "فشل في حذف المنتج",
+    "requiredField": "هذا الحقل مطلوب",
+    "invalidEmail": "يرجى إدخال بريد إلكتروني صحيح",
+    "minLength": "الحد الأدنى للطول هو {{min}} حرفاً"
+  },
+  "categories": {
+    "dairy": "منتجات الألبان",
+    "vegetables": "الخضروات",
+    "fruits": "الفواكه",
+    "meat": "اللحوم",
+    "pantry": "المخزن",
+    "frozen": "المجمدات",
+    "other": "أخرى"
+  },
+  "units": {
+    "pieces": "قطعة",
+    "kg": "كغ",
+    "g": "غ",
+    "l": "لتر",
+    "ml": "مل",
+    "packs": "علبة"
+  },
+  "locations": {
+    "fridge": "الثلاجة",
+    "freezer": "الفريزر",
+    "pantry": "المخزن",
+    "counter": "الطاولة"
+  },
+  "status": {
+    "fresh": "طازج",
+    "expiringSoon": "ينتهي قريباً",
+    "expired": "منتهي الصلاحية"
+  },
+  "language": {
+    "english": "English",
+    "french": "Français",
+    "arabic": "العربية"
+  }
+}

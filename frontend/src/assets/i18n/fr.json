@@ -1,0 +1,94 @@
+{
+  "app": {
+    "title": "GroceryTrack",
+    "welcome": "Bienvenue sur GroceryTrack",
+    "description": "Suivez vos courses et ne manquez plus jamais d'essentiels !"
+  },
+  "auth": {
+    "login": "Connexion",
+    "register": "Inscription",
+    "logout": "Déconnexion",
+    "email": "Email",
+    "password": "Mot de passe",
+    "name": "Nom",
+    "confirmPassword": "Confirmer le mot de passe",
+    "loginTitle": "Se connecter",
+    "registerTitle": "Créer un compte",
+    "loginButton": "Se connecter",
+    "registerButton": "Créer un compte",
+    "noAccount": "Pas de compte ?",
+    "hasAccount": "Déjà un compte ?",
+    "loginSuccess": "Connexion réussie !",
+    "registerSuccess": "Inscription réussie !",
+    "loginError": "Échec de la connexion",
+    "registerError": "Échec de l'inscription"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "welcome": "Bienvenue",
+    "addGrocery": "Ajouter un produit",
+    "search": "Rechercher des produits...",
+    "filterByCategory": "Filtrer par catégorie",
+    "sortBy": "Trier par",
+    "clearFilters": "Effacer les filtres",
+    "totalGroceries": "Total des produits",
+    "expiringSoon": "Expire bientôt",
+    "expired": "Expiré",
+    "fresh": "Frais",
+    "name": "Nom",
+    "category": "Catégorie",
+    "expirationDate": "Date d'expiration",
+    "quantity": "Quantité",
+    "location": "Emplacement",
+    "status": "Statut",
+    "actions": "Actions",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce produit ?",
+    "deleteConfirmTitle": "Confirmer la suppression",
+    "addSuccess": "Produit ajouté avec succès !",
+    "updateSuccess": "Produit modifié avec succès !",
+    "deleteSuccess": "Produit supprimé avec succès !",
+    "addError": "Échec de l'ajout du produit",
+    "updateError": "Échec de la modification du produit",
+    "deleteError": "Échec de la suppression du produit",
+    "requiredField": "Ce champ est requis",
+    "invalidEmail": "Veuillez saisir un email valide",
+    "minLength": "La longueur minimale est de {{min}} caractères"
+  },
+  "categories": {
+    "dairy": "Produits laitiers",
+    "vegetables": "Légumes",
+    "fruits": "Fruits",
+    "meat": "Viande",
+    "pantry": "Garde-manger",
+    "frozen": "Surgelés",
+    "other": "Autre"
+  },
+  "units": {
+    "pieces": "pièces",
+    "kg": "kg",
+    "g": "g",
+    "l": "L",
+    "ml": "ml",
+    "packs": "paquets"
+  },
+  "locations": {
+    "fridge": "Réfrigérateur",
+    "freezer": "Congélateur",
+    "pantry": "Garde-manger",
+    "counter": "Comptoir"
+  },
+  "status": {
+    "fresh": "Frais",
+    "expiringSoon": "Expire bientôt",
+    "expired": "Expiré"
+  },
+  "language": {
+    "english": "English",
+    "french": "Français",
+    "arabic": "العربية"
+  }
+}

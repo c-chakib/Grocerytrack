@@ -1,21 +1,26 @@
 // Dashboard Component - Complete Phase 3 with All Methods
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { GroceryService, Grocery } from '../../core/services/grocery.service';
 import { AuthService } from '../../core/services/auth.service';
+import { SocketService } from '../../core/services/socket.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { LanguageSwitcherComponent } from '../../core/components/language-switcher/language-switcher.component';
+
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, TranslateModule, LanguageSwitcherComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   // ===== INJECTED SERVICES =====
   groceryService: GroceryService;
   authService: AuthService;
+  
 
   // ===== FORM =====
   groceryForm!: FormGroup;
@@ -29,7 +34,9 @@ export class DashboardComponent implements OnInit {
   constructor(
     groceryService: GroceryService,
     authService: AuthService,
-    private fb: FormBuilder
+    private socketService: SocketService,
+    private fb: FormBuilder,
+    private translate: TranslateService
   ) {
     this.groceryService = groceryService;
     this.authService = authService;
@@ -39,6 +46,37 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     console.log('📊 Dashboard initialized');
     this.groceryService.loadGroceries().subscribe();
+
+    // ADD SOCKET CONNECTION
+    const token = localStorage.getItem('token');
+    if (token) {
+      this.socketService.connect(token);
+
+      // Listen for real-time updates
+      this.socketService.on<Grocery>('grocery:created').subscribe(grocery => {
+        console.log('🔔 New grocery:', grocery);
+        this.groceryService.groceries.update(items => [grocery, ...items]);
+      });
+
+      this.socketService.on<Grocery>('grocery:updated').subscribe(grocery => {
+        console.log('🔔 Updated grocery:', grocery);
+        this.groceryService.groceries.update(items =>
+          items.map(item => item._id === grocery._id ? grocery : item)
+        );
+      });
+
+      this.socketService.on('grocery:deleted').subscribe((data: any) => {
+        const deletedId = data.id || data._id;
+        console.log('🔔 Deleted grocery:', deletedId);
+        this.groceryService.groceries.update(items =>
+          items.filter(item => item._id !== deletedId)
+        );
+      });
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.socketService.disconnect();
   }
 
   // ===== INITIALIZE FORM =====
@@ -55,27 +93,23 @@ export class DashboardComponent implements OnInit {
   }
 
   // ===== COMPUTED SIGNALS FOR STATISTICS =====
-  expiringCount = signal(0);
-  expiredCount = signal(0);
-  freshCount = signal(0);
+  expiringCount = computed(() =>
+    this.groceryService.groceries()
+      .filter(g => this.getStatus(g.expirationDate) === 'expiring-soon')
+      .length
+  );
 
-  updateStatistics(): void {
-    this.expiringCount.set(
-      this.groceryService.groceries()
-        .filter(g => this.getStatus(g.expirationDate) === 'expiring-soon')
-        .length
-    );
-    this.expiredCount.set(
-      this.groceryService.groceries()
-        .filter(g => this.getStatus(g.expirationDate) === 'expired')
-        .length
-    );
-    this.freshCount.set(
-      this.groceryService.groceries()
-        .filter(g => this.getStatus(g.expirationDate) === 'fresh')
-        .length
-    );
-  }
+  expiredCount = computed(() =>
+    this.groceryService.groceries()
+      .filter(g => this.getStatus(g.expirationDate) === 'expired')
+      .length
+  );
+
+  freshCount = computed(() =>
+    this.groceryService.groceries()
+      .filter(g => this.getStatus(g.expirationDate) === 'fresh')
+      .length
+  );
 
   // ===== MODAL METHODS =====
   openAddModal(): void {
@@ -125,7 +159,9 @@ export class DashboardComponent implements OnInit {
   // ===== CRUD METHODS =====
   addGrocery(): void {
     if (this.groceryForm.invalid) {
-      alert('❌ Please fill in all required fields');
+      this.translate.get('dashboard.requiredField').subscribe(message => {
+        alert('❌ ' + message);
+      });
       return;
     }
 
@@ -135,20 +171,25 @@ export class DashboardComponent implements OnInit {
     this.groceryService.createGrocery(formData).subscribe({
       next: () => {
         console.log('✅ Grocery added successfully');
-        alert('✅ Grocery added successfully!');
-        this.updateStatistics();
+        this.translate.get('dashboard.addSuccess').subscribe(message => {
+          alert('✅ ' + message);
+        });
         this.closeModals();
       },
       error: (error) => {
         console.error('❌ Error adding grocery:', error);
-        alert(`❌ Failed to add grocery: ${error.error?.error || 'Unknown error'}`);
+        this.translate.get('dashboard.addError').subscribe(message => {
+          alert('❌ ' + message + ': ' + (error.error?.error || 'Unknown error'));
+        });
       }
     });
   }
 
   updateGrocery(): void {
     if (this.groceryForm.invalid || !this.selectedGrocery()?._id) {
-      alert('❌ Please fill in all required fields');
+      this.translate.get('dashboard.requiredField').subscribe(message => {
+        alert('❌ ' + message);
+      });
       return;
     }
 
@@ -159,13 +200,16 @@ export class DashboardComponent implements OnInit {
     this.groceryService.updateGrocery(groceryId, formData).subscribe({
       next: () => {
         console.log('✅ Grocery updated successfully');
-        alert('✅ Grocery updated successfully!');
-        this.updateStatistics();
+        this.translate.get('dashboard.updateSuccess').subscribe(message => {
+          alert('✅ ' + message);
+        });
         this.closeModals();
       },
       error: (error) => {
         console.error('❌ Error updating grocery:', error);
-        alert(`❌ Failed to update grocery: ${error.error?.error || 'Unknown error'}`);
+        this.translate.get('dashboard.updateError').subscribe(message => {
+          alert('❌ ' + message + ': ' + (error.error?.error || 'Unknown error'));
+        });
       }
     });
   }
@@ -181,13 +225,16 @@ export class DashboardComponent implements OnInit {
     this.groceryService.deleteGrocery(id).subscribe({
       next: () => {
         console.log('✅ Grocery deleted successfully');
-        alert('✅ Grocery deleted successfully!');
-        this.updateStatistics();
+        this.translate.get('dashboard.deleteSuccess').subscribe(message => {
+          alert('✅ ' + message);
+        });
         this.closeModals();
       },
       error: (error) => {
         console.error('❌ Error deleting grocery:', error);
-        alert(`❌ Failed to delete grocery: ${error.error?.error || 'Unknown error'}`);
+        this.translate.get('dashboard.deleteError').subscribe(message => {
+          alert('❌ ' + message + ': ' + (error.error?.error || 'Unknown error'));
+        });
       }
     });
   }

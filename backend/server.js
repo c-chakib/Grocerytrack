@@ -6,12 +6,19 @@ import authRoutes from './src/routes/authRoutes.js';
 import groceryRoutes from './src/routes/groceryRoutes.js';
 import { ApiError } from './src/utils/apiError.js'; // Import your standardized error class
 import { errorHandler } from './src/middleware/errorHandler.js'; // Import your error middleware
+import { logger } from './src/utils/logger.js';
+import { createServer } from 'http'; 
+import { initializeSocket, emitToUser } from './src/config/socket.js'
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
 
+// Initialize Socket.IO
+const io = initializeSocket(httpServer);
+app.locals.io = io; 
 // ===== CORS CONFIGURATION =====
 
 app.use(cors({
@@ -43,7 +50,21 @@ const connectDB = async () => {
   }
 };
 connectDB();
-
+// ===== REQUEST LOGGING =====
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logger.info('Request', {
+      method: req.method,
+      path: req.path,
+      status: res.statusCode,
+      duration: `${duration}ms`,
+      userId: req.userId || 'anonymous'
+    });
+  });
+  next();
+});
 // ===== API ROUTES =====
 app.use('/api/auth', authRoutes);
 app.use('/api/groceries', groceryRoutes);
@@ -70,7 +91,7 @@ app.use(errorHandler);
 
 // ===== START SERVER =====
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════╗
 ║   🥬 GroceryTrack Backend Started      ║
