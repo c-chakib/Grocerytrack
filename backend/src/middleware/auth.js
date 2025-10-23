@@ -4,7 +4,9 @@ import jwt from 'jsonwebtoken';
 export const authMiddleware = (req, res, next) => {
   try {
     // Extract token from header: "Authorization: Bearer TOKEN"
-    const token = req.headers.authorization?.split(' ')[1];
+    // Try different cases since HTTP headers are case-insensitive
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    const token = authHeader?.split(' ')[1];
 
     if (!token) {
       return res.status(401).json({
@@ -20,10 +22,11 @@ export const authMiddleware = (req, res, next) => {
 
     next();
   } catch (error) {
+    console.error('JWT verification failed:', error.message);
     return res.status(401).json({
       error: 'Invalid or expired token. Please login again.'
     });
   }
 };
 
-export default authMiddleware;
+export default authMiddleware;1

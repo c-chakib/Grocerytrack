@@ -40,7 +40,12 @@ export class GroceryService {
   
   // ===== COMPUTED: Filtered & Sorted Groceries ===== (NEW!)
   filteredGroceries = computed(() => {
-    let filtered = this.groceries();
+    let filtered = this.groceries() || [];
+    
+    // Ensure filtered is always an array
+    if (!Array.isArray(filtered)) {
+      filtered = [];
+    }
     
     // Filter by category
     const category = this.selectedCategory();
@@ -59,16 +64,18 @@ export class GroceryService {
     
     // Sort by expiration date
     const sortDir = this.sortBy();
-    filtered.sort((a, b) => {
-      const dateA = new Date(a.expirationDate).getTime();
-      const dateB = new Date(b.expirationDate).getTime();
-      
-      if (sortDir === 'expiration-asc') {
-        return dateA - dateB; // Soonest first
-      } else {
-        return dateB - dateA; // Latest first
-      }
-    });
+    if (Array.isArray(filtered)) {
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.expirationDate).getTime();
+        const dateB = new Date(b.expirationDate).getTime();
+        
+        if (sortDir === 'expiration-asc') {
+          return dateA - dateB; // Soonest first
+        } else {
+          return dateB - dateA; // Latest first
+        }
+      });
+    }
     
     return filtered;
   });
@@ -97,10 +104,11 @@ export class GroceryService {
     this.isLoading.set(true);
     console.log('📥 Loading groceries from backend...');
     
-    return this.http.get<Grocery[]>(this.apiUrl).pipe(
-      tap((groceries) => {
-        console.log('✅ Groceries loaded:', groceries);
-        this.groceries.set(groceries || []);
+    return this.http.get<any>(this.apiUrl).pipe(
+      tap((response) => {
+        console.log('✅ Groceries loaded:', response);
+        const groceries = response.data?.groceries || [];
+        this.groceries.set(groceries);
         this.isLoading.set(false);
         this.error.set('');
       }),
@@ -118,8 +126,9 @@ export class GroceryService {
     this.isLoading.set(true);
     console.log('➕ Creating grocery:', grocery.name);
     
-    return this.http.post<Grocery>(this.apiUrl, grocery).pipe(
-      tap((newGrocery) => {
+    return this.http.post<any>(this.apiUrl, grocery).pipe(
+      tap((response) => {
+        const newGrocery = response.data;
         console.log('✅ Grocery created:', newGrocery);
         this.groceries.set([newGrocery, ...this.groceries()]);
         this.isLoading.set(false);

@@ -8,12 +8,18 @@ import { environment } from '../../../environments/environment';
 
 // Interface for API response
 interface AuthResponse {
-  token: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
+  statusCode: number;
+  success: boolean;
+  data: {
+    token: string;
+    user: {
+      id: string;
+      email: string;
+      name: string;
+    };
   };
+  message: string;
+  timestamp: string;
 }
 
 @Injectable({
@@ -41,9 +47,8 @@ export class AuthService {
   // ===== INITIALIZE AUTH ON APP START =====
   private initializeAuth(): void {
     const token = localStorage.getItem('token');
-    console.log('🔐 Initializing auth - Token found:', !!token);
 
-    if (token) {
+    if (token && typeof token === 'string' && token.trim().length > 0) {
       this.isAuthenticated.set(true);
     }
   }
@@ -105,7 +110,7 @@ export class AuthService {
   getCurrentUser(): Observable<any> {
     return this.http.get(`${this.apiUrl}/me`).pipe(
       tap((response: any) => {
-        this.currentUser.set(response.user);
+        this.currentUser.set(response.data.user);
         this.isAuthenticated.set(true);
       }),
       catchError((error) => {
@@ -118,19 +123,14 @@ export class AuthService {
 
   // ===== HANDLE SUCCESSFUL AUTH =====
   private handleAuthSuccess(response: AuthResponse): void {
-    console.log('📍 Auth success - Response:', response);
-
     // ✅ CRITICAL: Store token in localStorage
-    localStorage.setItem('token', response.token);
-    console.log('✅ Token stored in localStorage');
+    localStorage.setItem('token', response.data.token);
 
     // ✅ Update signals
-    this.currentUser.set(response.user);
+    this.currentUser.set(response.data.user);
     this.isAuthenticated.set(true);
     this.isLoading.set(false);
     this.error.set('');
-
-    console.log('✅ Navigating to dashboard...');
 
     // ✅ Navigate to dashboard
     this.router.navigate(['/dashboard']);

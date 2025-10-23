@@ -5,20 +5,15 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   // Get token from localStorage
   const token = localStorage.getItem('token');
 
-  console.log('🔐 JWT Interceptor - Token found:', !!token);
-
-  // If token exists, attach it to request header
-  if (token) {
-    console.log('✅ Attaching token to request:', req.url);
-    req = req.clone({
+  // If token exists and is a non-empty string, attach it to request header
+  if (token && typeof token === 'string' && token.trim().length > 0) {
+    const authReq = req.clone({
       setHeaders: {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token.trim()}`
       }
     });
+    return next(authReq);
   } else {
-    console.warn('⚠️ No token found for request:', req.url);
+    return next(req);
   }
-
-  // Continue with request
-  return next(req);
 };

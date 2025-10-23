@@ -1,16 +1,17 @@
-// Grocery Controller - CRUD Operations
+// Grocery Controller - CRUD Operations (Best Practice/Axis 1)
+// Uses standardized ApiResponse/ApiError, asyncHandler, backend filtering
+
 import Grocery from '../models/Grocery.js';
+import { ApiResponse } from '../utils/apiResponse.js';
+import { ApiError } from '../utils/apiError.js';
 
 // Helper: Calculate grocery status
 const calculateStatus = (expirationDate) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
   const expiry = new Date(expirationDate);
   expiry.setHours(0, 0, 0, 0);
-
   const daysUntilExpiry = Math.floor((expiry - today) / (1000 * 60 * 60 * 24));
-
   if (daysUntilExpiry < 0) return 'expired';
   if (daysUntilExpiry <= 3) return 'expiring-soon';
   return 'fresh';
@@ -21,19 +22,14 @@ export const createGrocery = async (req, res, next) => {
   try {
     const { name, category, expirationDate, quantity, unit, location, notes } = req.body;
 
-    // Validate required fields
     if (!name || !expirationDate) {
-      return res.status(400).json({
-        error: 'Please provide name and expiration date'
-      });
+      throw new ApiError(400, 'Please provide name and expiration date');
     }
 
-    // Calculate status
     const status = calculateStatus(expirationDate);
 
-    // Create grocery
     const grocery = new Grocery({
-      userId: req.userId, // From auth middleware
+      userId: req.userId,
       name,
       category: category || 'Other',
       expirationDate,
@@ -46,26 +42,76 @@ export const createGrocery = async (req, res, next) => {
 
     await grocery.save();
 
-    res.status(201).json(grocery);
+    res.status(201).json(new ApiResponse(201, grocery, "Grocery created successfully"));
   } catch (error) {
     next(error);
   }
 };
 
-// READ ALL: Get all groceries for user
+// READ ALL: Get all groceries for user (with backend filtering/sorting/pagination)
 export const getAllGroceries = async (req, res, next) => {
   try {
-    // Find all groceries for this user, sorted by expiration
-    const groceries = await Grocery.find({ userId: req.userId })
-      .sort({ expirationDate: 1 });
+    // Query params for filtering/sorting/pagination
+    const {
+      category = 'all',
+      search = '',
+      sort = 'expiration-asc',
+      limit = 50,
+      offset = 0
+    } = req.query;
 
-    // Recalculate status for each (in case time has passed)
-    const updated = groceries.map(g => ({
+    let query = { userId: req.userId };
+
+    // Filter by category
+    if (category && category !== 'all') {
+      query.category = category;
+    }
+
+    // Search by name/category
+    if (search && search.trim()) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { category: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Sort
+    let sortOptions = {};
+    if (sort === 'expiration-asc') sortOptions = { expirationDate: 1 };
+    else if (sort === 'expiration-desc') sortOptions = { expirationDate: -1 };
+    else sortOptions = { createdAt: -1 };
+
+    // Pagination
+    const limitNum = Math.min(parseInt(limit) || 50, 100);
+    const offsetNum = Math.max(parseInt(offset) || 0, 0);
+
+    // Query MongoDB
+    const groceries = await Grocery.find(query)
+      .sort(sortOptions)
+      .limit(limitNum)
+      .skip(offsetNum);
+
+    // Get count for pagination
+    const total = await Grocery.countDocuments(query);
+
+    // Recalculate status/daysUntilExpiry
+    const result = groceries.map(g => ({
       ...g._doc,
-      status: calculateStatus(g.expirationDate)
+      status: calculateStatus(g.expirationDate),
+      daysUntilExpiry: Math.floor(
+        (new Date(g.expirationDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+      )
     }));
 
-    res.json(updated);
+    res.json(new ApiResponse(200, {
+      groceries: result,
+      pagination: {
+        total,
+        limit: limitNum,
+        offset: offsetNum,
+        hasMore: offsetNum + limitNum < total
+      }
+    }, "Groceries fetched successfully"));
   } catch (error) {
     next(error);
   }
@@ -76,20 +122,13 @@ export const getGrocery = async (req, res, next) => {
   try {
     const grocery = await Grocery.findById(req.params.id);
 
-    if (!grocery) {
-      return res.status(404).json({
-        error: 'Grocery not found'
-      });
-    }
+    if (!grocery) throw new ApiError(404, "Grocery not found");
 
-    // Verify ownership (security!)
     if (grocery.userId.toString() !== req.userId.toString()) {
-      return res.status(403).json({
-        error: 'Not authorized'
-      });
+      throw new ApiError(403, "Not authorized");
     }
 
-    res.json(grocery);
+    res.json(new ApiResponse(200, grocery, "Grocery fetched successfully"));
   } catch (error) {
     next(error);
   }
@@ -100,17 +139,10 @@ export const updateGrocery = async (req, res, next) => {
   try {
     let grocery = await Grocery.findById(req.params.id);
 
-    if (!grocery) {
-      return res.status(404).json({
-        error: 'Grocery not found'
-      });
-    }
+    if (!grocery) throw new ApiError(404, "Grocery not found");
 
-    // Verify ownership
     if (grocery.userId.toString() !== req.userId.toString()) {
-      return res.status(403).json({
-        error: 'Not authorized'
-      });
+      throw new ApiError(403, "Not authorized");
     }
 
     // Update fields
@@ -120,7 +152,7 @@ export const updateGrocery = async (req, res, next) => {
       { new: true, runValidators: true }
     );
 
-    res.json(grocery);
+    res.json(new ApiResponse(200, grocery, "Grocery updated successfully"));
   } catch (error) {
     next(error);
   }
@@ -131,22 +163,15 @@ export const deleteGrocery = async (req, res, next) => {
   try {
     const grocery = await Grocery.findById(req.params.id);
 
-    if (!grocery) {
-      return res.status(404).json({
-        error: 'Grocery not found'
-      });
-    }
+    if (!grocery) throw new ApiError(404, "Grocery not found");
 
-    // Verify ownership
     if (grocery.userId.toString() !== req.userId.toString()) {
-      return res.status(403).json({
-        error: 'Not authorized'
-      });
+      throw new ApiError(403, "Not authorized");
     }
 
     await Grocery.findByIdAndDelete(req.params.id);
 
-    res.json({ message: 'Grocery deleted successfully' });
+    res.json(new ApiResponse(200, null, "Grocery deleted successfully"));
   } catch (error) {
     next(error);
   }

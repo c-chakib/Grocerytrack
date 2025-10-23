@@ -1,17 +1,19 @@
-﻿// backend/server.js - CORRECTED IMPORT NAMES
-import express from 'express';
+﻿import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import authRoutes from './src/routes/authRoutes.js';        // ✅ FIXED: authRoutes
-import groceryRoutes from './src/routes/groceryRoutes.js';  // ✅ FIXED: groceryRoutes
+import authRoutes from './src/routes/authRoutes.js';
+import groceryRoutes from './src/routes/groceryRoutes.js';
+import { ApiError } from './src/utils/apiError.js'; // Import your standardized error class
+import { errorHandler } from './src/middleware/errorHandler.js'; // Import your error middleware
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 
-// ===== CORS CONFIGURATION (MUST be FIRST!) =====
+// ===== CORS CONFIGURATION =====
+
 app.use(cors({
   origin: [
     'http://localhost:4200',
@@ -21,10 +23,11 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Authorization'],
   optionsSuccessStatus: 200
 }));
 
-// ===== BODY PARSER MIDDLEWARE =====
+// ===== BODY PARSER =====
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -39,14 +42,13 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
-
 connectDB();
 
 // ===== API ROUTES =====
 app.use('/api/auth', authRoutes);
 app.use('/api/groceries', groceryRoutes);
 
-// ===== HEALTH CHECK ENDPOINT =====
+// ===== HEALTH CHECK =====
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -56,28 +58,18 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ===== 404 HANDLER =====
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Route not found',
-    path: req.path,
-    method: req.method
-  });
+// ===== 404 HANDLER (standardized) =====
+app.use((req, res, next) => {
+  // Pass to global error handler for a unified format
+  next(new ApiError(404, 'Route not found', [], '', req.path, req.method));
 });
 
-// ===== ERROR HANDLER =====
-app.use((err, req, res, next) => {
-  console.error('❌ Server Error:', err.message);
-  
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error',
-    timestamp: new Date().toISOString()
-  });
-});
+// ===== GLOBAL ERROR HANDLER (standardized) =====
+// This must be the LAST middleware
+app.use(errorHandler);
 
 // ===== START SERVER =====
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════╗

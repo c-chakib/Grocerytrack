@@ -1,6 +1,10 @@
-// Authentication Controller - Login & Registration Logic
+// Authentication Controller - Login & Registration Logic (Best Practice/Axis 1)
+// Uses standardized ApiResponse/ApiError, strong error handling
+
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import { ApiResponse } from '../utils/apiResponse.js';
+import { ApiError } from '../utils/apiError.js';
 
 // Generate JWT token
 const generateToken = (userId) => {
@@ -18,17 +22,13 @@ export const register = async (req, res, next) => {
 
     // Validate input
     if (!email || !password || !name) {
-      return res.status(400).json({
-        error: 'Please provide email, password, and name'
-      });
+      throw new ApiError(400, 'Please provide email, password, and name');
     }
 
     // Check if email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({
-        error: 'Email already registered. Please login instead.'
-      });
+      throw new ApiError(409, 'Email already registered. Please login instead.');
     }
 
     // Create user (password auto-hashed by pre-save middleware)
@@ -38,15 +38,17 @@ export const register = async (req, res, next) => {
     // Generate token
     const token = generateToken(user._id);
 
-    // Return token and user info
-    res.status(201).json({
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name
-      }
-    });
+    // Return token and user info (standardized)
+    res.status(201).json(
+      new ApiResponse(201, {
+        token,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name
+        }
+      }, "Registration successful")
+    );
   } catch (error) {
     next(error);
   }
@@ -59,38 +61,34 @@ export const login = async (req, res, next) => {
 
     // Validate input
     if (!email || !password) {
-      return res.status(400).json({
-        error: 'Please provide email and password'
-      });
+      throw new ApiError(400, 'Please provide email and password');
     }
 
     // Find user (include password field for comparison)
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      return res.status(401).json({
-        error: 'Invalid email or password'
-      });
+      throw new ApiError(401, 'Invalid email or password');
     }
 
     // Compare passwords
     const isPasswordCorrect = await user.comparePassword(password);
     if (!isPasswordCorrect) {
-      return res.status(401).json({
-        error: 'Invalid email or password'
-      });
+      throw new ApiError(401, 'Invalid email or password');
     }
 
     // Generate token
     const token = generateToken(user._id);
 
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name
-      }
-    });
+    res.status(200).json(
+      new ApiResponse(200, {
+        token,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name
+        }
+      }, "Login successful")
+    );
   } catch (error) {
     next(error);
   }
@@ -103,12 +101,18 @@ export const getCurrentUser = async (req, res, next) => {
     const user = await User.findById(req.userId);
 
     if (!user) {
-      return res.status(404).json({
-        error: 'User not found'
-      });
+      throw new ApiError(404, 'User not found');
     }
 
-    res.json({ user });
+    res.status(200).json(
+      new ApiResponse(200, {
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name
+        }
+      }, "User profile fetched successfully")
+    );
   } catch (error) {
     next(error);
   }
