@@ -30,6 +30,7 @@
     "search": "Search groceries...",
     "filterByCategory": "Filter by category",
     "sortBy": "Sort by",
+    "latestFirst": "Latest First",
     "clearFilters": "Clear Filters",
     "totalGroceries": "Total Groceries",
     "expiringSoon": "Expiring Soon",

@@ -30,6 +30,7 @@
     "search": "Rechercher des produits...",
     "filterByCategory": "Filtrer par catégorie",
     "sortBy": "Trier par",
+    "latestFirst": "Plus récent d'abord",
     "clearFilters": "Effacer les filtres",
     "totalGroceries": "Total des produits",
     "expiringSoon": "Expire bientôt",

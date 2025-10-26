@@ -6,12 +6,14 @@ const LOCATIONS = ['Fridge', 'Freezer', 'Pantry', 'Counter'];
 
 // Grocery create/update input validation
 export const validateGroceryCreate = (req, res, next) => {
-  const { name, expirationDate, category, quantity, unit, location } = req.body;
+  const { name, category, quantity, unit, location } = req.body;
   const errors = [];
+  
   if (!name || typeof name !== 'string' || !name.trim())
     errors.push('Name is required and must be a non-empty string.');
-  if (!expirationDate || isNaN(new Date(expirationDate).getTime()))
-    errors.push('Expiration date is required and must be a valid date.');
+  
+  // expirationDate is now OPTIONAL (auto-calculated)
+  
   if (category && !CATEGORIES.includes(category))
     errors.push(`Category must be one of: ${CATEGORIES.join(', ')}`);
   if (quantity && (typeof quantity !== 'number' || quantity <= 0))
@@ -20,6 +22,7 @@ export const validateGroceryCreate = (req, res, next) => {
     errors.push(`Unit must be one of: ${UNITS.join(', ')}`);
   if (location && !LOCATIONS.includes(location))
     errors.push(`Location must be one of: ${LOCATIONS.join(', ')}`);
+  
   if (errors.length) throw new ApiError(400, 'Validation Error', errors);
   next();
 };

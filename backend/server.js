@@ -8,7 +8,9 @@ import { ApiError } from './src/utils/apiError.js'; // Import your standardized 
 import { errorHandler } from './src/middleware/errorHandler.js'; // Import your error middleware
 import { logger } from './src/utils/logger.js';
 import { createServer } from 'http'; 
-import { initializeSocket, emitToUser } from './src/config/socket.js'
+import { initializeSocket } from './src/config/socket.js'
+import productRoutes from './src/routes/productRoutes.js';
+
 
 // Load environment variables
 dotenv.config();
@@ -68,6 +70,7 @@ app.use((req, res, next) => {
 // ===== API ROUTES =====
 app.use('/api/auth', authRoutes);
 app.use('/api/groceries', groceryRoutes);
+app.use('/api/products', productRoutes);
 
 // ===== HEALTH CHECK =====
 app.get('/api/health', (req, res) => {

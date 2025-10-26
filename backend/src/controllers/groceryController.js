@@ -5,6 +5,7 @@ import Grocery from '../models/Grocery.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { ApiError } from '../utils/apiError.js';
 import { emitToUser } from '../config/socket.js';
+import { calculateSuggestedExpiration } from '../config/shelfLife.js';
 
 
 // Helper: Calculate grocery status
@@ -19,13 +20,27 @@ const calculateStatus = (expirationDate) => {
   return 'fresh';
 };
 
-// CREATE: Add new grocery
+// CREATE: Add new grocery with auto-expiration calculation
 export const createGrocery = async (req, res, next) => {
   try {
-    const { name, category, expirationDate, quantity, unit, location, notes } = req.body;
+    let { name, category, expirationDate, quantity, unit, location, notes, useAutoExpiration } = req.body;
 
-    if (!name || !expirationDate) {
-      throw new ApiError(400, 'Please provide name and expiration date');
+    if (!name) {
+      throw new ApiError(400, 'Please provide name');
+    }
+
+    // AUTO-CALCULATE EXPIRATION if not provided or useAutoExpiration is true
+    if (!expirationDate || useAutoExpiration) {
+      const suggestion = calculateSuggestedExpiration(
+        name, 
+        category || 'Other', 
+        location || 'Fridge'
+      );
+      expirationDate = suggestion.suggestedDate;
+      
+      // Add metadata about auto-calculation
+      const autoNote = `[Auto-calculated: ${suggestion.shelfLifeDays} days shelf life - ${suggestion.confidence} confidence]`;
+      notes = notes ? `${notes}\n${autoNote}` : autoNote;
     }
 
     const status = calculateStatus(expirationDate);
@@ -43,10 +58,12 @@ export const createGrocery = async (req, res, next) => {
     });
 
     await grocery.save();
-        // ADD SOCKET EMIT
-        if (req.app.locals.io) {
+
+    // Socket.IO real-time update
+    if (req.app.locals.io) {
       emitToUser(req.app.locals.io, req.userId, 'grocery:created', grocery);
     }
+
     res.status(201).json(new ApiResponse(201, grocery, "Grocery created successfully"));
   } catch (error) {
     next(error);

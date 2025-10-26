@@ -1,5 +1,6 @@
 // Grocery Service - CRUD + Filtering + Sorting + Search
 import { Injectable, signal, computed } from '@angular/core';
+import { ToastService } from './toast.service';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, catchError } from 'rxjs';
 import { throwError } from 'rxjs';
@@ -27,6 +28,9 @@ export interface Grocery {
 })
 export class GroceryService {
   private apiUrl = `${environment.apiUrl}/groceries`;
+  constructor(private http: HttpClient, private toast: ToastService) {
+    this.loadGroceries();
+  }
   
   // ===== CORE STATE =====
   groceries = signal<Grocery[]>([]);
@@ -95,25 +99,19 @@ export class GroceryService {
     return stats;
   });
 
-  constructor(private http: HttpClient) {
-    this.loadGroceries();
-  }
+  // Removed duplicate constructor
 
   // ===== LOAD ALL GROCERIES =====
   loadGroceries(): Observable<Grocery[]> {
     this.isLoading.set(true);
-    console.log('📥 Loading groceries from backend...');
-    
     return this.http.get<any>(this.apiUrl).pipe(
       tap((response) => {
-        console.log('✅ Groceries loaded:', response);
         const groceries = response.data?.groceries || [];
         this.groceries.set(groceries);
         this.isLoading.set(false);
         this.error.set('');
       }),
       catchError((error) => {
-        console.error('❌ Error loading groceries:', error);
         this.isLoading.set(false);
         this.error.set(error.error?.error || 'Failed to load groceries');
         return throwError(() => error);
@@ -124,18 +122,12 @@ export class GroceryService {
   // ===== CREATE GROCERY =====
   createGrocery(grocery: Omit<Grocery, '_id' | 'userId' | 'createdAt' | 'updatedAt'>): Observable<Grocery> {
     this.isLoading.set(true);
-    console.log('➕ Creating grocery:', grocery.name);
-    
     return this.http.post<any>(this.apiUrl, grocery).pipe(
-      tap((response) => {
-        const newGrocery = response.data;
-        console.log('✅ Grocery created:', newGrocery);
-        this.groceries.set([newGrocery, ...this.groceries()]);
+      tap(() => {
         this.isLoading.set(false);
         this.error.set('');
       }),
       catchError((error) => {
-        console.error('❌ Error creating grocery:', error);
         this.isLoading.set(false);
         this.error.set(error.error?.error || 'Failed to create grocery');
         return throwError(() => error);
@@ -145,11 +137,10 @@ export class GroceryService {
 
   // ===== GET SINGLE GROCERY =====
   getGrocery(id: string): Observable<Grocery> {
-    console.log('📖 Fetching single grocery:', id);
-    
     return this.http.get<Grocery>(`${this.apiUrl}/${id}`).pipe(
+      tap(() => {
+      }),
       catchError((error) => {
-        console.error('❌ Error fetching grocery:', error);
         this.error.set(error.error?.error || 'Failed to fetch grocery');
         return throwError(() => error);
       })
@@ -159,11 +150,8 @@ export class GroceryService {
   // ===== UPDATE GROCERY =====
   updateGrocery(id: string, grocery: Omit<Grocery, '_id' | 'userId' | 'createdAt' | 'updatedAt'>): Observable<Grocery> {
     this.isLoading.set(true);
-    console.log('✏️ Updating grocery:', id);
-    
     return this.http.put<Grocery>(`${this.apiUrl}/${id}`, grocery).pipe(
       tap((updatedGrocery) => {
-        console.log('✅ Grocery updated:', updatedGrocery);
         const updated = this.groceries().map(g => 
           g._id === id ? updatedGrocery : g
         );
@@ -172,7 +160,6 @@ export class GroceryService {
         this.error.set('');
       }),
       catchError((error) => {
-        console.error('❌ Error updating grocery:', error);
         this.isLoading.set(false);
         this.error.set(error.error?.error || 'Failed to update grocery');
         return throwError(() => error);
@@ -183,17 +170,13 @@ export class GroceryService {
   // ===== DELETE GROCERY =====
   deleteGrocery(id: string): Observable<any> {
     this.isLoading.set(true);
-    console.log('🗑️ Deleting grocery:', id);
-    
     return this.http.delete<any>(`${this.apiUrl}/${id}`).pipe(
       tap(() => {
-        console.log('✅ Grocery deleted');
         this.groceries.set(this.groceries().filter(g => g._id !== id));
         this.isLoading.set(false);
         this.error.set('');
       }),
       catchError((error) => {
-        console.error('❌ Error deleting grocery:', error);
         this.isLoading.set(false);
         this.error.set(error.error?.error || 'Failed to delete grocery');
         return throwError(() => error);
@@ -204,22 +187,18 @@ export class GroceryService {
   // ===== FILTER & SORT METHODS ===== (NEW!)
   
   setCategory(category: string): void {
-    console.log('🏷️ Filtering by category:', category);
     this.selectedCategory.set(category);
   }
-  
+
   setSearchQuery(query: string): void {
-    console.log('🔍 Searching:', query);
     this.searchQuery.set(query);
   }
-  
+
   setSortBy(sort: 'expiration-asc' | 'expiration-desc'): void {
-    console.log('📊 Sorting by:', sort);
     this.sortBy.set(sort);
   }
-  
+
   clearFilters(): void {
-    console.log('🧹 Clearing all filters');
     this.selectedCategory.set('all');
     this.searchQuery.set('');
     this.sortBy.set('expiration-asc');

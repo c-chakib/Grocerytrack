@@ -7,7 +7,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { SocketService } from '../../core/services/socket.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LanguageSwitcherComponent } from '../../core/components/language-switcher/language-switcher.component';
-
+import { ProductService, Product } from '../../core/services/product.service';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -20,11 +21,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // ===== INJECTED SERVICES =====
   groceryService: GroceryService;
   authService: AuthService;
+  productService: ProductService; // REMOVE PRIVATE AND DECLARE HERE
   
-
   // ===== FORM =====
   groceryForm!: FormGroup;
   
+  // ===== PRODUCT SEARCH PROPERTIES =====
+  searchResults = signal<Product[]>([]);
+  showSearchResults = signal(false);
+  selectedProduct = signal<Product | null>(null);
+  useAutoExpiration = signal(true);
+  suggestedExpiration = signal<string>('');
+  suggestionInfo = signal<string>('');
+
   // ===== MODAL STATE =====
   showAddModal = signal(false);
   showEditModal = signal(false);
@@ -36,10 +45,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     authService: AuthService,
     private socketService: SocketService,
     private fb: FormBuilder,
-    private translate: TranslateService
+    private translate: TranslateService,
+    productService: ProductService,
+    private toast: ToastService
   ) {
     this.groceryService = groceryService;
     this.authService = authService;
+    this.productService = productService;
     this.initializeForm();
   }
 
@@ -92,6 +104,161 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ===== PRODUCT SEARCH METHODS =====
+
+  /**
+   * Handle product search input
+   */
+  onProductSearch(query: string): void {
+    if (query.length < 2) {
+      this.searchResults.set([]);
+      this.showSearchResults.set(false);
+      return;
+    }
+    
+    this.productService.searchProducts(query).subscribe(response => {
+      const products = response.data || [];
+      this.searchResults.set(products);
+      this.showSearchResults.set(products.length > 0);
+    });
+  }
+
+  /**
+   * Select product from search results
+   */
+  selectProduct(product: Product): void {
+    console.log('✅ Product selected:', product.name);
+    this.selectedProduct.set(product);
+    
+    // Auto-fill form
+    this.groceryForm.patchValue({
+      name: product.name,
+      category: product.category
+    });
+    
+    // Hide search results
+    this.showSearchResults.set(false);
+
+    // Get suggested expiration date if auto-expiration is enabled
+    if (this.useAutoExpiration()) {
+      this.getSuggestedExpiration();
+    }
+  }
+
+  /**
+   * Get suggested expiration date based on current form values
+   */
+  getSuggestedExpiration(): void {
+    const name = this.groceryForm.get('name')?.value;
+    const category = this.groceryForm.get('category')?.value;
+    const location = this.groceryForm.get('location')?.value;
+
+    if (!name || !category) {
+      console.warn('⚠️ Name or category missing');
+      return;
+    }
+
+    this.productService.getSuggestedExpiration(name, category, location).subscribe(response => {
+      if (response.data) {
+        const suggestion = response.data;
+        const dateOnly = suggestion.suggestedDate.split('T')[0];
+        
+        this.suggestedExpiration.set(dateOnly);
+        this.suggestionInfo.set(
+          `${suggestion.shelfLifeDays} days (${suggestion.confidence} confidence) - ${suggestion.locationNote}`
+        );
+        
+        // Auto-fill expiration date if enabled
+        if (this.useAutoExpiration()) {
+          this.groceryForm.patchValue({
+            expirationDate: dateOnly
+          });
+          console.log('✅ Auto-filled expiration:', dateOnly);
+        }
+      }
+    });
+  }
+
+  /**
+   * Toggle auto-expiration on/off
+   */
+  toggleAutoExpiration(): void {
+    const newValue = !this.useAutoExpiration();
+    this.useAutoExpiration.set(newValue);
+    
+    if (newValue) {
+      // If turning on, calculate expiration
+      this.getSuggestedExpiration();
+    } else {
+      // If turning off, clear suggestion
+      this.suggestedExpiration.set('');
+      this.suggestionInfo.set('');
+    }
+    
+    console.log('🔄 Auto-expiration:', newValue ? 'ON' : 'OFF');
+  }
+
+  /**
+   * Clear search results (with delay for click to register)
+   */
+  clearSearchResults(): void {
+    setTimeout(() => {
+      this.showSearchResults.set(false);
+    }, 200);
+  }
+
+  /**
+   * Handle category change - update recommended location
+   */
+  onCategoryChangeWithSuggestion(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    const category = target.value;
+    
+    // Call existing category filter
+    this.onCategoryChange(event);
+    
+    // Get recommended location for this category
+    this.productService.getRecommendedLocation(category).subscribe(response => {
+      if (response.data?.recommendedLocation) {
+        const recommendedLocation = response.data.recommendedLocation;
+        
+        // Update location if it's still default
+        const currentLocation = this.groceryForm.get('location')?.value;
+        if (currentLocation === 'Fridge' || !currentLocation) {
+          this.groceryForm.patchValue({ location: recommendedLocation });
+          console.log('✅ Recommended location:', recommendedLocation);
+        }
+      }
+    });
+    
+    // Recalculate expiration
+    if (this.useAutoExpiration()) {
+      this.getSuggestedExpiration();
+    }
+  }
+
+  /**
+   * Handle location change - recalculate expiration
+   */
+  onLocationChange(event: Event): void {
+    console.log('📍 Location changed');
+    if (this.useAutoExpiration()) {
+      this.getSuggestedExpiration();
+    }
+  }
+
+  /**
+   * Reset product search state
+   */
+  private resetProductSearch(): void {
+    this.searchResults.set([]);
+    this.showSearchResults.set(false);
+    this.selectedProduct.set(null);
+    this.useAutoExpiration.set(true);
+    this.suggestedExpiration.set('');
+    this.suggestionInfo.set('');
+  }
+
   // ===== COMPUTED SIGNALS FOR STATISTICS =====
   expiringCount = computed(() =>
     this.groceryService.groceries()
@@ -115,6 +282,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   openAddModal(): void {
     console.log('➕ Opening add modal');
     this.showAddModal.set(true);
+    this.resetProductSearch();
     this.groceryForm.reset({ 
       quantity: 1, 
       category: 'Other',
@@ -160,26 +328,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
   addGrocery(): void {
     if (this.groceryForm.invalid) {
       this.translate.get('dashboard.requiredField').subscribe(message => {
-        alert('❌ ' + message);
+        this.toast.show(message, 'error');
       });
       return;
     }
 
-    const formData = this.groceryForm.value;
+    const formData = {
+      ...this.groceryForm.value,
+      useAutoExpiration: this.useAutoExpiration()
+    };
+    
     console.log('➕ Submitting new grocery:', formData);
     
     this.groceryService.createGrocery(formData).subscribe({
       next: () => {
         console.log('✅ Grocery added successfully');
         this.translate.get('dashboard.addSuccess').subscribe(message => {
-          alert('✅ ' + message);
+          this.toast.show(message, 'success');
         });
+        this.resetProductSearch();
         this.closeModals();
       },
       error: (error) => {
         console.error('❌ Error adding grocery:', error);
         this.translate.get('dashboard.addError').subscribe(message => {
-          alert('❌ ' + message + ': ' + (error.error?.error || 'Unknown error'));
+          this.toast.show(message + ': ' + (error.error?.error || 'Unknown error'), 'error');
         });
       }
     });
@@ -188,7 +361,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   updateGrocery(): void {
     if (this.groceryForm.invalid || !this.selectedGrocery()?._id) {
       this.translate.get('dashboard.requiredField').subscribe(message => {
-        alert('❌ ' + message);
+        this.toast.show(message, 'error');
       });
       return;
     }
@@ -201,14 +374,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       next: () => {
         console.log('✅ Grocery updated successfully');
         this.translate.get('dashboard.updateSuccess').subscribe(message => {
-          alert('✅ ' + message);
+          this.toast.show(message, 'success');
         });
         this.closeModals();
       },
       error: (error) => {
         console.error('❌ Error updating grocery:', error);
         this.translate.get('dashboard.updateError').subscribe(message => {
-          alert('❌ ' + message + ': ' + (error.error?.error || 'Unknown error'));
+          this.toast.show(message + ': ' + (error.error?.error || 'Unknown error'), 'error');
         });
       }
     });
@@ -217,7 +390,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   deleteGrocery(): void {
     const id = this.selectedGrocery()?._id;
     if (!id) {
-      alert('❌ Error: No grocery selected');
+      this.toast.show('Error: No grocery selected', 'error');
       return;
     }
 
@@ -226,14 +399,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       next: () => {
         console.log('✅ Grocery deleted successfully');
         this.translate.get('dashboard.deleteSuccess').subscribe(message => {
-          alert('✅ ' + message);
+          this.toast.show(message, 'success');
         });
         this.closeModals();
       },
       error: (error) => {
         console.error('❌ Error deleting grocery:', error);
         this.translate.get('dashboard.deleteError').subscribe(message => {
-          alert('❌ ' + message + ': ' + (error.error?.error || 'Unknown error'));
+          this.toast.show(message + ': ' + (error.error?.error || 'Unknown error'), 'error');
         });
       }
     });
