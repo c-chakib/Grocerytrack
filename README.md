@@ -27,6 +27,7 @@ ng serve
 A modern, real-time grocery tracking app with internationalization, analytics, and a beautiful UI/UX.
 
 ## Features
+
 - 🛒 Track groceries with categories, expiration dates, quantities, and locations
 - 🔔 Real-time updates (Socket.IO)
 - 🌍 Multi-language support (English, French, Arabic)
@@ -38,6 +39,7 @@ A modern, real-time grocery tracking app with internationalization, analytics, a
 - 🥬 Professional UI with toast notifications
 
 ## Tech Stack
+
 - **Frontend:** Angular 17+, RxJS, ngx-translate
 - **Backend:** Node.js, Express, MongoDB, Socket.IO
 - **Other:** PWA support, modern CSS, i18n
@@ -45,14 +47,16 @@ A modern, real-time grocery tracking app with internationalization, analytics, a
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js (v18+ recommended)
 - MongoDB (local or Atlas)
 
 ### Installation
-\`\`\`bash
+
+```bash
 # Clone the repo
-https://github.com/c-chakib/chakib-grocerytrack.git
-cd chakib-grocerytrack
+git clone https://github.com/c-chakib/GROCERYTRACK.git
+cd GROCERYTRACK
 
 # Install backend dependencies
 cd backend
@@ -61,14 +65,16 @@ npm install
 # Install frontend dependencies
 cd ../frontend
 npm install
-\`\`\`
+```
 
 ### Configuration
+
 - Copy `.env.example` to `.env` in the backend folder and set your MongoDB URI and JWT secret.
 - Update `environment.ts` in the frontend with your backend API URL if needed.
 
 ### Running the App
-\`\`\`bash
+
+```bash
 # Start backend
 cd backend
 npm start
@@ -76,11 +82,12 @@ npm start
 # Start frontend
 cd ../frontend
 ng serve -o
-\`\`\`
+```
 
 ## Folder Structure
+
 ```
-chakib-grocerytrack/
+GROCERYTRACK/
 ├── backend/
 │   ├── src/
 │   ├── package.json
@@ -94,9 +101,11 @@ chakib-grocerytrack/
 ```
 
 ## Contributing
+
 Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
 
 ## License
+
 MIT
 
 ---
