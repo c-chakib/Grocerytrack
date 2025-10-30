@@ -1,0 +1,206 @@
+<!-- Analytics Dashboard Page -->
+<div class="analytics-container">
+  <!-- Header -->
+  <header class="analytics-header">
+    <div class="header-content">
+      <h1>📊 Analytics Dashboard</h1>
+      <p>Track your food waste reduction journey</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-refresh" (click)="refresh()">
+        🔄 Refresh
+      </button>
+      <a routerLink="/dashboard" class="btn-back">
+        ← Back to Dashboard
+      </a>
+    </div>
+  </header>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="loading-state">
+    <div class="spinner">⏳</div>
+    <p>Loading analytics...</p>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading() && dashboardStats()" class="analytics-content">
+    
+    <!-- Overview Stats -->
+    <section class="stats-grid">
+      <div class="stat-card primary">
+        <div class="stat-icon">📦</div>
+        <div class="stat-info">
+          <h3>Total Items Tracked</h3>
+          <p class="stat-value">{{ formatNumber(dashboardStats()!.overview.totalItems) }}</p>
+        </div>
+      </div>
+
+      <div class="stat-card success">
+        <div class="stat-icon">♻️</div>
+        <div class="stat-info">
+          <h3>Items Saved</h3>
+          <p class="stat-value">{{ formatNumber(dashboardStats()!.overview.activeItems + dashboardStats()!.overview.freshItems) }}</p>
+        </div>
+      </div>
+
+      <div class="stat-card warning">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-info">
+          <h3>Expiring Soon</h3>
+          <p class="stat-value">{{ formatNumber(dashboardStats()!.overview.expiringSoon) }}</p>
+        </div>
+      </div>
+
+      <div class="stat-card danger">
+        <div class="stat-icon">🗑️</div>
+        <div class="stat-info">
+          <h3>Expired Items</h3>
+          <p class="stat-value">{{ formatNumber(dashboardStats()!.overview.expiredItems) }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Waste Reduction Rate -->
+    <section class="waste-reduction-card">
+      <h2>🎯 Waste Reduction Rate</h2>
+      <div class="progress-circle">
+        <svg viewBox="0 0 200 200" class="circular-progress">
+          <circle cx="100" cy="100" r="80" class="progress-bg"></circle>
+          <circle 
+            cx="100" 
+            cy="100" 
+            r="80" 
+            class="progress-bar"
+            [style.stroke]="getStatusColor(dashboardStats()!.overview.wasteReductionRate)"
+            [style.stroke-dashoffset]="503 - (503 * dashboardStats()!.overview.wasteReductionRate / 100)"
+          ></circle>
+        </svg>
+        <div class="progress-text">
+          <span class="percentage">{{ dashboardStats()!.overview.wasteReductionRate }}%</span>
+          <span class="label">Saved</span>
+        </div>
+      </div>
+      <p class="description">
+        You've prevented {{ dashboardStats()!.overview.wasteReductionRate }}% of your groceries from going to waste!
+      </p>
+    </section>
+
+    <!-- Financial & Environmental Impact -->
+    <section class="impact-grid" *ngIf="savingsReport()">
+      <div class="impact-card money">
+        <h3>💰 Financial Impact</h3>
+        <div class="impact-stats">
+          <div class="impact-item">
+            <span class="label">Money Saved</span>
+            <span class="value positive">{{ formatCurrency(savingsReport()!.financial.moneySaved) }}</span>
+          </div>
+          <div class="impact-item">
+            <span class="label">Money Wasted</span>
+            <span class="value negative">{{ formatCurrency(savingsReport()!.financial.moneyWasted) }}</span>
+          </div>
+          <div class="impact-item total">
+            <span class="label">Net Savings</span>
+            <span class="value">{{ formatCurrency(savingsReport()!.financial.totalSavings) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="impact-card environment">
+        <h3>🌱 Environmental Impact</h3>
+        <div class="impact-stats">
+          <div class="impact-item">
+            <span class="label">CO2 Saved</span>
+            <span class="value">{{ formatNumber(savingsReport()!.environmental.co2Saved) }} kg</span>
+          </div>
+          <div class="impact-item">
+            <span class="label">Water Saved</span>
+            <span class="value">{{ formatNumber(savingsReport()!.environmental.waterSaved) }} L</span>
+          </div>
+          <div class="impact-item">
+            <span class="label">Waste Reduced</span>
+            <span class="value">{{ formatNumber(savingsReport()!.environmental.wasteReduced) }} items</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Category Breakdown -->
+    <section class="category-breakdown">
+      <h2>📊 Items by Category</h2>
+      <div class="category-grid">
+        <div 
+          *ngFor="let cat of dashboardStats()!.categoryStats" 
+          class="category-item"
+        >
+          <div class="category-header">
+            <span class="category-name">{{ cat._id }}</span>
+            <span class="category-count">{{ cat.count }}</span>
+          </div>
+          <div class="category-bar">
+            <div 
+              class="category-progress" 
+              [style.width.%]="(cat.count / dashboardStats()!.overview.totalItems) * 100"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Achievements -->
+    <section class="achievements-section" *ngIf="achievements().length > 0">
+      <h2>🏆 Achievements</h2>
+      <div class="achievements-grid">
+        <div 
+          *ngFor="let achievement of achievements()" 
+          class="achievement-card"
+          [class.unlocked]="achievement.unlocked"
+        >
+          <div class="achievement-icon">{{ achievement.icon }}</div>
+          <div class="achievement-info">
+            <h4>{{ achievement.name }}</h4>
+            <p>{{ achievement.description }}</p>
+          </div>
+          <div class="achievement-badge" *ngIf="achievement.unlocked">
+            ✓
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Waste Analysis -->
+    <section class="waste-analysis" *ngIf="wasteStats()">
+      <h2>🗑️ Waste Analysis (Last 30 Days)</h2>
+      <div class="waste-stats-grid">
+        <div class="waste-stat">
+          <span class="waste-label">Total Wasted</span>
+          <span class="waste-value">{{ wasteStats()!.totalWasted }} items</span>
+        </div>
+        <div class="waste-stat">
+          <span class="waste-label">Estimated Cost</span>
+          <span class="waste-value">{{ formatCurrency(wasteStats()!.estimatedCost) }}</span>
+        </div>
+        <div class="waste-stat">
+          <span class="waste-label">CO2 Emissions</span>
+          <span class="waste-value">{{ wasteStats()!.co2Emissions }} kg</span>
+        </div>
+      </div>
+      
+      <div *ngIf="wasteStats()!.wastedItems.length > 0" class="wasted-items">
+        <h4>Recently Wasted Items:</h4>
+        <ul>
+          <li *ngFor="let item of wasteStats()!.wastedItems.slice(0, 5)">
+            {{ item.name }} ({{ item.category }})
+          </li>
+        </ul>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading() && !dashboardStats()" class="empty-state">
+    <h3>📊 No Data Yet</h3>
+    <p>Start tracking groceries to see your analytics!</p>
+    <a routerLink="/dashboard" class="btn-primary">Go to Dashboard</a>
+  </div>
+</div>

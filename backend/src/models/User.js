@@ -28,7 +28,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Name is required']
   },
-
+// Email notification preferences
+emailNotifications: {
+  type: Boolean,
+  default: true
+},
   // Days before expiry to alert (default: 3)
   alertDays: {
     type: Number,

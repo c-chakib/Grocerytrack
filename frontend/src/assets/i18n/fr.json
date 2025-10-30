@@ -26,6 +26,7 @@
   "dashboard": {
     "title": "Tableau de bord",
     "welcome": "Bienvenue",
+    "notes": "Notes",
     "addGrocery": "Ajouter un produit",
     "search": "Rechercher des produits...",
     "filterByCategory": "Filtrer par catégorie",
@@ -87,6 +88,8 @@
     "expiringSoon": "Expire bientôt",
     "expired": "Expiré"
   },
+  "notes": "Notes",
+  "unit": "Unité",
   "language": {
     "english": "English",
     "french": "Français",

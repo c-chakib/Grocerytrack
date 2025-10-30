@@ -1,21 +1,9 @@
-<!-- Dashboard Component - Complete Phase 3 with Filtering, Sorting, Search -->
 <div class="dashboard-container">
-  <!-- ===== HEADER ===== -->
-  <header class="dashboard-header">
-    <div class="header-left">
-      <h1>🥬 {{ 'app.title' | translate }}</h1>
-    </div>
-    <div class="header-right">
-      <app-language-switcher></app-language-switcher>
-      <span class="user-info">👋 {{ userName() }}</span>
-      <button class="btn-logout" (click)="authService.logout()">{{ 'auth.logout' | translate }}</button>
-    </div>
-  </header>
-
-  <!-- ===== MAIN CONTENT ===== -->
   <main class="dashboard-content">
-    <!-- ===== STATISTICS ===== -->
-    <div class="stats-container">
+
+    <h2 id="stats-heading" class="visually-hidden">Dashboard Statistics</h2>
+    
+    <section class="stats-container" aria-labelledby="stats-heading">
       <div class="stat-card">
         <h3>{{ 'dashboard.totalGroceries' | translate }}</h3>
         <p class="stat-number">{{ groceries().length }}</p>
@@ -28,20 +16,18 @@
         <h3>{{ 'dashboard.expired' | translate }}</h3>
         <p class="stat-number">{{ expiredCount() }}</p>
       </div>
-    </div>
+    </section>
 
-    <!-- ===== FILTER & SEARCH BAR ===== -->
     <div class="filter-search-bar">
-      <!-- Add Button -->
       <button class="btn btn-primary" (click)="openAddModal()" [disabled]="isLoading()">
         ➕ {{ 'dashboard.addGrocery' | translate }}
       </button>
 
-      <!-- Category Filter -->
       <select 
         class="filter-select"
         [value]="selectedCategory()"
         (change)="onCategoryChange($event)"
+        aria-label="Filter by category"
       >
         <option value="all">{{ 'dashboard.filterByCategory' | translate }}</option>
         <option value="Dairy">🥛 {{ 'categories.dairy' | translate }}</option>
@@ -53,26 +39,25 @@
         <option value="Other">📝 {{ 'categories.other' | translate }}</option>
       </select>
 
-      <!-- Sort Options -->
       <select 
         class="filter-select"
         [value]="sortBy()"
         (change)="handleSortChange($event)"
+        aria-label="Sort by"
       >
         <option value="expiration-asc">📅 {{ 'dashboard.expiringSoon' | translate }}</option>
         <option value="expiration-desc">📅 {{ 'dashboard.latestFirst' | translate }}</option>
       </select>
 
-      <!-- Search Box -->
       <input 
         type="text"
         class="search-input"
         [placeholder]="'dashboard.search' | translate"
         [value]="searchQuery()"
         (input)="onSearchChange($any($event.target).value)"
+        aria-label="Search your groceries"
       />
 
-      <!-- Clear Filters Button -->
       <button 
         class="btn btn-secondary btn-sm"
         (click)="clearAllFilters()"
@@ -82,36 +67,38 @@
       </button>
     </div>
 
-    <!-- ===== LOADING STATE ===== -->
     <div *ngIf="isLoading()" class="loading-state">
       ⏳ Loading groceries...
     </div>
 
-    <!-- ===== EMPTY STATE - NO MATCHES ===== -->
     <div *ngIf="!isLoading() && filteredGroceries().length === 0 && groceries().length > 0" class="empty-state">
       <p>🔍 No groceries match your filters. Try adjusting your search!</p>
     </div>
 
-    <!-- ===== EMPTY STATE - NO DATA ===== -->
     <div *ngIf="!isLoading() && groceries().length === 0" class="empty-state">
       <p>📭 No groceries yet. Click "{{ 'dashboard.addGrocery' | translate }}" to get started!</p>
     </div>
 
-    <!-- ===== GROCERIES GRID ===== -->
-    <div *ngIf="!isLoading() && filteredGroceries().length > 0" class="groceries-grid">
+    <h2 id="groceries-heading" class="visually-hidden">Grocery List</h2>
+
+    <section 
+      *ngIf="!isLoading() && filteredGroceries().length > 0" 
+      class="groceries-grid"
+      aria-labelledby="groceries-heading"
+    >
       <div *ngFor="let grocery of filteredGroceries()" 
            class="grocery-card"
            [style.border-left-color]="getStatusColor(getStatus(grocery.expirationDate))">
         
-        <!-- Card Header -->
         <div class="card-header">
           <h3>{{ grocery.name }}</h3>
           <span class="badge" [ngClass]="getStatus(grocery.expirationDate)">
-            {{ 'status.' + getStatus(grocery.expirationDate) | translate }}
+            <span class="status-label {{ getStatus(grocery.expirationDate) }}">
+              {{ 'status.' + getStatus(grocery.expirationDate) | translate }}
+            </span>
           </span>
         </div>
 
-        <!-- Card Details -->
         <div class="card-details">
           <p><strong>{{ 'dashboard.category' | translate }}:</strong> {{ grocery.category }}</p>
           <p>
@@ -122,10 +109,9 @@
           </p>
           <p><strong>{{ 'dashboard.quantity' | translate }}:</strong> {{ grocery.quantity }} {{ grocery.unit }}</p>
           <p><strong>{{ 'dashboard.location' | translate }}:</strong> {{ grocery.location }}</p>
-          <p *ngIf="grocery.notes"><strong>{{ 'dashboard.notes' | translate }}:</strong> {{ grocery.notes }}</p>
+          <p *ngIf="grocery.notes && grocery.notes.trim()"><strong>{{ 'notes' | translate }}</strong> {{ grocery.notes }}</p>
         </div>
 
-        <!-- Card Actions -->
         <div class="card-actions">
           <button class="btn btn-sm btn-edit" (click)="openEditModal(grocery)">
             ✏️ {{ 'dashboard.edit' | translate }}
@@ -135,226 +121,217 @@
           </button>
         </div>
       </div>
-    </div>
+    </section>
   </main>
 
-  <!-- ===== ADD/EDIT MODAL ===== -->
   <div *ngIf="showAddModal() || showEditModal()" class="modal-overlay" (click)="closeModals()">
     <div class="modal" (click)="$event.stopPropagation()">
-      <!-- Modal Header -->
       <div class="modal-header">
         <h2>{{ showEditModal() ? ('✏️ ' + ('dashboard.edit' | translate) + ' ' + ('dashboard.name' | translate | lowercase)) : ('➕ ' + ('dashboard.addGrocery' | translate)) }}</h2>
-        <button class="btn-close" (click)="closeModals()">✕</button>
+        <button class="btn-close" (click)="closeModals()" aria-label="Close modal">✕</button>
       </div>
 
-      <!-- Modal Form -->
-<form [formGroup]="groceryForm" class="modal-form">
+      <form [formGroup]="groceryForm" class="modal-form">
   
-  <!-- ===== PRODUCT SEARCH (NEW!) ===== -->
-  <div class="form-group" *ngIf="showAddModal()">
-    <label>🔍 Search Products <span class="optional-text">(Optional)</span></label>
-    <div class="search-wrapper">
-      <input 
-        type="text" 
-        placeholder="Search Open Food Facts database..."
-        class="form-input"
-        (input)="onProductSearch($any($event.target).value)"
-        (blur)="clearSearchResults()"
-        autocomplete="off"
-      />
-      
-      <!-- Loading indicator -->
-      <div *ngIf="productService.isSearching()" class="search-loading">
-        <span class="spinner">⏳</span> Searching...
-      </div>
-      
-      <!-- Search Results Dropdown -->
-      <div *ngIf="showSearchResults() && !productService.isSearching()" class="search-results">
-        <div 
-          *ngFor="let product of searchResults()"
-          class="search-result-item"
-          (mousedown)="selectProduct(product)"
-        >
-          <img 
-            *ngIf="product.image" 
-            [src]="product.image" 
-            [alt]="product.name"
-            class="product-image"
+        <div class="form-group" *ngIf="showAddModal()">
+          <label for="product-search">🔍 Search Products <span class="optional-text">(Optional)</span></label>
+          <div class="search-wrapper">
+            <input 
+              type="text" 
+              id="product-search"
+              placeholder="Search Open Food Facts database..."
+              class="form-input"
+              [formControl]="productSearchControl"
+              (blur)="clearSearchResults()"
+              autocomplete="off"
+              aria-label="Search products from database"
+            />
+            
+            <div *ngIf="productService.isSearching()" class="search-loading">
+              <span class="spinner">⏳</span> Searching...
+            </div>
+            
+            <div *ngIf="showSearchResults() && !productService.isSearching()" class="search-results">
+              <div 
+                *ngFor="let product of searchResults()"
+                class="search-result-item"
+                (mousedown)="selectProduct(product)"
+                tabindex="0"
+                role="option"
+              >
+                <img 
+                  *ngIf="product.image" 
+                  [src]="product.image" 
+                  [alt]="product.name"
+                  class="product-image"
+                />
+                <div class="product-image-placeholder" *ngIf="!product.image">
+                  📦
+                </div>
+                <div class="product-info">
+                  <strong>{{ product.name }}</strong>
+                  <small>{{ product.category }} <span *ngIf="product.brands">• {{ product.brands }}</span></small>
+                </div>
+              </div>
+              
+              <div *ngIf="searchResults().length === 0" class="search-empty">
+                No products found. Try a different search term.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="grocery-name">{{ 'dashboard.name' | translate }} *</label>
+          <input 
+            type="text" 
+            id="grocery-name"
+            formControlName="name" 
+            placeholder="e.g., Milk, Tomato, Chicken"
+            class="form-input"
+            (input)="getSuggestedExpiration()"
           />
-          <div class="product-image-placeholder" *ngIf="!product.image">
-            📦
-          </div>
-          <div class="product-info">
-            <strong>{{ product.name }}</strong>
-            <small>{{ product.category }} <span *ngIf="product.brands">• {{ product.brands }}</span></small>
+          
+          <small *ngIf="selectedProduct()" class="success-message">
+            ✅ Selected from database: {{ selectedProduct()?.name }}
+          </small>
+          
+          <small *ngIf="groceryForm.get('name')?.hasError('required') && groceryForm.get('name')?.touched" class="error">
+            {{ 'dashboard.requiredField' | translate }}
+          </small>
+          <small *ngIf="groceryForm.get('name')?.hasError('minlength')" class="error">
+            {{ 'dashboard.minLength' | translate: { min: 2 } }}
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="grocery-category">{{ 'dashboard.category' | translate }}</label>
+          <select 
+            id="grocery-category"
+            formControlName="category" 
+            class="form-input" 
+            (change)="onCategoryChangeWithSuggestion($event)"
+          >
+            <option value="Dairy">🥛 {{ 'categories.dairy' | translate }}</option>
+            <option value="Vegetables">🥬 {{ 'categories.vegetables' | translate }}</option>
+            <option value="Fruits">🍎 {{ 'categories.fruits' | translate }}</option>
+            <option value="Meat">🍖 {{ 'categories.meat' | translate }}</option>
+            <option value="Pantry">📦 {{ 'categories.pantry' | translate }}</option>
+            <option value="Frozen">❄️ {{ 'categories.frozen' | translate }}</option>
+            <option value="Other">📝 {{ 'categories.other' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="grocery-location">{{ 'dashboard.location' | translate }}</label>
+          <select 
+            id="grocery-location"
+            formControlName="location" 
+            class="form-input" 
+            (change)="onLocationChange($event)"
+          >
+            <option value="Fridge">❄️ {{ 'locations.fridge' | translate }}</option>
+            <option value="Freezer">🧊 {{ 'locations.freezer' | translate }}</option>
+            <option value="Pantry">📦 {{ 'locations.pantry' | translate }}</option>
+            <option value="Counter">🍽️ {{ 'locations.counter' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="form-group auto-expiration-group">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [checked]="useAutoExpiration()"
+              (change)="toggleAutoExpiration()"
+            />
+            <span class="checkbox-text">🤖 Use smart expiration date calculation</span>
+          </label>
+          
+          <div *ngIf="suggestedExpiration() && useAutoExpiration()" class="suggestion-info">
+            <div class="suggestion-date">
+              💡 Suggested date: <strong>{{ suggestedExpiration() | date: 'MMM dd, yyyy' }}</strong>
+            </div>
+            <div class="suggestion-details">
+              {{ suggestionInfo() }}
+            </div>
           </div>
         </div>
-        
-        <!-- Empty state -->
-        <div *ngIf="searchResults().length === 0" class="search-empty">
-          No products found. Try a different search term.
+
+        <div class="form-group">
+          <label for="grocery-expiration">
+            {{ 'dashboard.expirationDate' | translate }} 
+            <span *ngIf="useAutoExpiration()" class="optional-badge">(Auto-calculated - you can override)</span>
+            <span *ngIf="!useAutoExpiration()" class="required-badge">*</span>
+          </label>
+          <input 
+            type="date" 
+            id="grocery-expiration"
+            formControlName="expirationDate"
+            class="form-input"
+            [class.auto-filled]="useAutoExpiration() && suggestedExpiration()"
+          />
+          <small *ngIf="!useAutoExpiration() && groceryForm.get('expirationDate')?.hasError('required')" class="error">
+            {{ 'dashboard.requiredField' | translate }}
+          </small>
         </div>
-      </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="grocery-quantity">{{ 'dashboard.quantity' | translate }}</label>
+            <input 
+              type="number" 
+              id="grocery-quantity"
+              formControlName="quantity" 
+              min="1"
+              class="form-input"
+            />
+          </div>
+          <div class="form-group">
+            <label for="grocery-unit">{{ 'unit' | translate }}</label>
+            <select id="grocery-unit" formControlName="unit" class="form-input">
+              <option value="pieces">{{ 'units.pieces' | translate }}</option>
+              <option value="L">{{ 'units.l' | translate }}</option>
+              <option value="ml">{{ 'units.ml' | translate }}</option>
+              <option value="kg">{{ 'units.kg' | translate }}</option>
+              <option value="g">{{ 'units.g' | translate }}</option>
+              <option value="packs">{{ 'units.packs' | translate }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="grocery-notes">{{ 'notes' | translate }}</label>
+          <textarea 
+            id="grocery-notes"
+            formControlName="notes" 
+            placeholder="Any additional notes..."
+            class="form-input"
+            rows="3"
+          ></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeModals()">
+            {{ 'dashboard.cancel' | translate }}
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-primary"
+            (click)="showEditModal() ? updateGrocery() : addGrocery()"
+            [disabled]="groceryForm.invalid || isLoading()"
+          >
+            {{ showEditModal() ? ('✏️ ' + ('dashboard.save' | translate)) : ('➕ ' + ('dashboard.addGrocery' | translate)) }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
-  <!-- ===== NAME ===== -->
-  <div class="form-group">
-    <label>{{ 'dashboard.name' | translate }} *</label>
-    <input 
-      type="text" 
-      formControlName="name" 
-      placeholder="e.g., Milk, Tomato, Chicken"
-      class="form-input"
-      (input)="getSuggestedExpiration()"
-    />
-    
-    <!-- Selected product indicator -->
-    <small *ngIf="selectedProduct()" class="success-message">
-      ✅ Selected from database: {{ selectedProduct()?.name }}
-    </small>
-    
-    <!-- Validation errors -->
-    <small *ngIf="groceryForm.get('name')?.hasError('required') && groceryForm.get('name')?.touched" class="error">
-      {{ 'dashboard.requiredField' | translate }}
-    </small>
-    <small *ngIf="groceryForm.get('name')?.hasError('minlength')" class="error">
-      {{ 'dashboard.minLength' | translate: { min: 2 } }}
-    </small>
-  </div>
-
-  <!-- ===== CATEGORY ===== -->
-  <div class="form-group">
-    <label>{{ 'dashboard.category' | translate }}</label>
-    <select 
-      formControlName="category" 
-      class="form-input" 
-      (change)="onCategoryChangeWithSuggestion($event)"
-    >
-      <option value="Dairy">🥛 {{ 'categories.dairy' | translate }}</option>
-      <option value="Vegetables">🥬 {{ 'categories.vegetables' | translate }}</option>
-      <option value="Fruits">🍎 {{ 'categories.fruits' | translate }}</option>
-      <option value="Meat">🍖 {{ 'categories.meat' | translate }}</option>
-      <option value="Pantry">📦 {{ 'categories.pantry' | translate }}</option>
-      <option value="Frozen">❄️ {{ 'categories.frozen' | translate }}</option>
-      <option value="Other">📝 {{ 'categories.other' | translate }}</option>
-    </select>
-  </div>
-
-  <!-- ===== LOCATION ===== -->
-  <div class="form-group">
-    <label>{{ 'dashboard.location' | translate }}</label>
-    <select 
-      formControlName="location" 
-      class="form-input" 
-      (change)="onLocationChange($event)"
-    >
-      <option value="Fridge">❄️ {{ 'locations.fridge' | translate }}</option>
-      <option value="Freezer">🧊 {{ 'locations.freezer' | translate }}</option>
-      <option value="Pantry">📦 {{ 'locations.pantry' | translate }}</option>
-      <option value="Counter">🍽️ {{ 'locations.counter' | translate }}</option>
-    </select>
-  </div>
-
-  <!-- ===== AUTO-EXPIRATION TOGGLE ===== -->
-  <div class="form-group auto-expiration-group">
-    <label class="checkbox-label">
-      <input 
-        type="checkbox" 
-        [checked]="useAutoExpiration()"
-        (change)="toggleAutoExpiration()"
-      />
-      <span class="checkbox-text">🤖 Use smart expiration date calculation</span>
-    </label>
-    
-    <!-- Suggestion info -->
-    <div *ngIf="suggestedExpiration() && useAutoExpiration()" class="suggestion-info">
-      <div class="suggestion-date">
-        💡 Suggested date: <strong>{{ suggestedExpiration() | date: 'MMM dd, yyyy' }}</strong>
-      </div>
-      <div class="suggestion-details">
-        {{ suggestionInfo() }}
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== EXPIRATION DATE ===== -->
-  <div class="form-group">
-    <label>
-      {{ 'dashboard.expirationDate' | translate }} 
-      <span *ngIf="useAutoExpiration()" class="optional-badge">(Auto-calculated - you can override)</span>
-      <span *ngIf="!useAutoExpiration()" class="required-badge">*</span>
-    </label>
-    <input 
-      type="date" 
-      formControlName="expirationDate"
-      class="form-input"
-      [class.auto-filled]="useAutoExpiration() && suggestedExpiration()"
-    />
-    <small *ngIf="!useAutoExpiration() && groceryForm.get('expirationDate')?.hasError('required')" class="error">
-      {{ 'dashboard.requiredField' | translate }}
-    </small>
-  </div>
-
-  <!-- ===== QUANTITY & UNIT ===== -->
-  <div class="form-row">
-    <div class="form-group">
-      <label>{{ 'dashboard.quantity' | translate }}</label>
-      <input 
-        type="number" 
-        formControlName="quantity" 
-        min="1"
-        class="form-input"
-      />
-    </div>
-    <div class="form-group">
-      <label>{{ 'dashboard.unit' | translate }}</label>
-      <select formControlName="unit" class="form-input">
-        <option value="pieces">{{ 'units.pieces' | translate }}</option>
-        <option value="L">{{ 'units.l' | translate }}</option>
-        <option value="ml">{{ 'units.ml' | translate }}</option>
-        <option value="kg">{{ 'units.kg' | translate }}</option>
-        <option value="g">{{ 'units.g' | translate }}</option>
-        <option value="packs">{{ 'units.packs' | translate }}</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- ===== NOTES ===== -->
-  <div class="form-group">
-    <label>{{ 'dashboard.notes' | translate }}</label>
-    <textarea 
-      formControlName="notes" 
-      placeholder="Any additional notes..."
-      class="form-input"
-      rows="3"
-    ></textarea>
-  </div>
-
-  <!-- ===== MODAL ACTIONS ===== -->
-  <div class="modal-actions">
-    <button type="button" class="btn btn-secondary" (click)="closeModals()">
-      {{ 'dashboard.cancel' | translate }}
-    </button>
-    <button 
-      type="button" 
-      class="btn btn-primary"
-      (click)="showEditModal() ? updateGrocery() : addGrocery()"
-      [disabled]="groceryForm.invalid || isLoading()"
-    >
-      {{ showEditModal() ? ('✏️ ' + ('dashboard.save' | translate)) : ('➕ ' + ('dashboard.addGrocery' | translate)) }}
-    </button>
-  </div>
-</form>
-    </div>
-  </div>
-
-  <!-- ===== DELETE CONFIRMATION MODAL ===== -->
   <div *ngIf="showDeleteConfirm()" class="modal-overlay" (click)="closeModals()">
     <div class="modal modal-sm" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>🗑️ {{ 'dashboard.deleteConfirmTitle' | translate }}</h2>
-        <button class="btn-close" (click)="closeModals()">✕</button>
+        <button class="btn-close" (click)="closeModals()" aria-label="Close confirmation modal">✕</button>
       </div>
       
       <div class="modal-body">
@@ -370,6 +347,13 @@
           🗑️ {{ 'dashboard.delete' | translate }}
         </button>
       </div>
+    </div>
+  </div>
+
+  <div *ngIf="pwaService.canInstall()" class="install-prompt">
+    <div class="install-content">
+      <span>📱 Install GroceryTrack for faster access!</span>
+      <button (click)="installPWA()" class="btn-install">Install</button>
     </div>
   </div>
 </div>

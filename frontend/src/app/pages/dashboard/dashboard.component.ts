@@ -1,19 +1,21 @@
-// Dashboard Component - Complete Phase 3 with All Methods
+// Dashboard Component - OPTIMIZED VERSION
 import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
 import { GroceryService, Grocery } from '../../core/services/grocery.service';
 import { AuthService } from '../../core/services/auth.service';
 import { SocketService } from '../../core/services/socket.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { LanguageSwitcherComponent } from '../../core/components/language-switcher/language-switcher.component';
 import { ProductService, Product } from '../../core/services/product.service';
 import { ToastService } from '../../core/services/toast.service';
+import { PWAService } from '../../core/services/pwa.service';
+import { Subscription, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError, filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, TranslateModule, LanguageSwitcherComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, TranslateModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -21,12 +23,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // ===== INJECTED SERVICES =====
   groceryService: GroceryService;
   authService: AuthService;
-  productService: ProductService; // REMOVE PRIVATE AND DECLARE HERE
+  productService: ProductService;
   
   // ===== FORM =====
   groceryForm!: FormGroup;
   
   // ===== PRODUCT SEARCH PROPERTIES =====
+  productSearchControl = new FormControl('');
+  private searchSubscription!: Subscription;
   searchResults = signal<Product[]>([]);
   showSearchResults = signal(false);
   selectedProduct = signal<Product | null>(null);
@@ -47,6 +51,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private translate: TranslateService,
     productService: ProductService,
+    public pwaService: PWAService,
     private toast: ToastService
   ) {
     this.groceryService = groceryService;
@@ -58,6 +63,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     console.log('📊 Dashboard initialized');
     this.groceryService.loadGroceries().subscribe();
+    this.setupProductSearchDebounce();
 
     // ADD SOCKET CONNECTION
     const token = localStorage.getItem('token');
@@ -89,6 +95,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.socketService.disconnect();
+    if (this.searchSubscription) {
+      this.searchSubscription.unsubscribe();
+    }
   }
 
   // ===== INITIALIZE FORM =====
@@ -104,22 +113,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  async installPWA() {
+    await this.pwaService.promptInstall();
+  }
+
   // ===== PRODUCT SEARCH METHODS =====
 
   /**
-   * Handle product search input
+   * **OPTIMIZED: Sets up an RxJS stream to debounce search input.**
+   * This prevents API calls on every keystroke.
    */
-  onProductSearch(query: string): void {
-    if (query.length < 2) {
-      this.searchResults.set([]);
-      this.showSearchResults.set(false);
-      return;
-    }
-    
-    this.productService.searchProducts(query).subscribe(response => {
-      const products = response.data || [];
-      this.searchResults.set(products);
-      this.showSearchResults.set(products.length > 0);
+  private setupProductSearchDebounce(): void {
+    this.searchSubscription = this.productSearchControl.valueChanges.pipe(
+      debounceTime(400), // Wait 400ms after last keystroke
+      distinctUntilChanged(), // Only emit if value changed
+      switchMap(query => {
+        if (query == null || query.length < 2) {
+          this.searchResults.set([]);
+          this.showSearchResults.set(false);
+          return of(null); // Return empty observable
+        }
+        // Let the service handle its own loading state
+        return this.productService.searchProducts(query).pipe(
+          catchError(() => of({ data: [] })) // Handle errors gracefully
+        );
+      })
+    ).subscribe(response => {
+      if (response) { // Only update if we got a real response
+        const products = response.data || [];
+        this.searchResults.set(products);
+        this.showSearchResults.set(products.length > 0);
+      }
     });
   }
 
@@ -138,6 +162,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     
     // Hide search results
     this.showSearchResults.set(false);
+    this.productSearchControl.setValue(product.name, { emitEvent: false }); // Update input without firing stream
 
     // Get suggested expiration date if auto-expiration is enabled
     if (this.useAutoExpiration()) {
@@ -257,12 +282,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.useAutoExpiration.set(true);
     this.suggestedExpiration.set('');
     this.suggestionInfo.set('');
+    this.productSearchControl.setValue('', { emitEvent: false });
   }
 
   // ===== COMPUTED SIGNALS FOR STATISTICS =====
   expiringCount = computed(() =>
     this.groceryService.groceries()
-      .filter(g => this.getStatus(g.expirationDate) === 'expiring-soon')
+      .filter(g => this.getStatus(g.expirationDate) === 'expiringSoon')
       .length
   );
 
@@ -440,8 +466,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   // ===== UTILITY METHODS =====
-  getStatus(expirationDate: string): 'fresh' | 'expiring-soon' | 'expired' {
-    return this.groceryService.calculateStatus(expirationDate);
+  getStatus(expirationDate: string): 'fresh' | 'expiringSoon' | 'expired' {
+    const status = this.groceryService.calculateStatus(expirationDate);
+    if (status === 'expiring-soon') return 'expiringSoon';
+    if (status === 'expired') return 'expired';
+    return 'fresh';
   }
 
   getStatusColor(status: string): string {

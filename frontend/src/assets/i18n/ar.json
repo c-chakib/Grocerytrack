@@ -30,6 +30,7 @@
     "search": "البحث في المنتجات...",
     "filterByCategory": "تصفية حسب الفئة",
     "sortBy": "ترتيب حسب",
+    "notes": "ملاحظات" ,
     "latestFirst": "الأحدث أولاً",
     "clearFilters": "مسح المرشحات",
     "totalGroceries": "إجمالي المنتجات",
@@ -87,6 +88,8 @@
     "expiringSoon": "ينتهي قريباً",
     "expired": "منتهي الصلاحية"
   },
+  "notes": "ملاحظات",
+  "unit": "الوحدة",
   "language": {
     "english": "English",
     "french": "Français",

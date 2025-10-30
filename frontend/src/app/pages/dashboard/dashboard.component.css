@@ -5,21 +5,21 @@
 
 :host {
   /* ===== COLOR PALETTE ===== */
-  --primary: #10b981;          /* Emerald Green */
-  --primary-dark: #059669;     /* Dark Green */
+  --primary: #10b981;        /* Emerald Green */
+  --primary-dark: #059669;    /* Dark Green */
   --primary-light: #d1fae5;    /* Light Green */
   
   --secondary: #3b82f6;        /* Blue */
   --secondary-dark: #1e40af;   /* Dark Blue */
   
-  --danger: #ef4444;           /* Red */
+  --danger: #ef4444;          /* Red */
   --danger-dark: #dc2626;      /* Dark Red */
   
   --warning: #f59e0b;          /* Amber */
   --warning-dark: #d97706;     /* Dark Amber */
   
   --success: #10b981;          /* Green */
-  --info: #3b82f6;             /* Blue */
+  --info: #3b82f6;            /* Blue */
   
   --gray-50: #f9fafb;
   --gray-100: #f3f4f6;
@@ -72,6 +72,19 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* NEW: Accessibility class */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ===== CONTAINER ===== */
@@ -243,6 +256,7 @@ body {
   gap: var(--spacing-sm);
   position: relative;
   overflow: hidden;
+  text-decoration: none; /* For link buttons */
 }
 
 .btn::before {
@@ -454,6 +468,7 @@ body {
   word-break: break-word;
 }
 
+/* Badge (in header) */
 .badge {
   padding: 6px 12px;
   border-radius: 20px;
@@ -470,7 +485,8 @@ body {
   color: #065f46;
 }
 
-.badge.expiring-soon {
+.badge.expiringSoon,
+.badge.expiring-soon { /* Support both class names */
   background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%);
   color: #92400e;
 }
@@ -478,6 +494,16 @@ body {
 .badge.expired {
   background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   color: #7f1d1d;
+}
+
+/* Status Label (inside badge) */
+.status-label {
+  display: inline-block;
+  font-size: 0.98rem;
+  font-weight: 600;
+  padding: 0; /* Padding is on the parent .badge */
+  margin: 0;
+  letter-spacing: 0.01em;
 }
 
 .card-details {
@@ -493,11 +519,14 @@ body {
   color: var(--gray-600);
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* Allow wrapping on small cards */
 }
 
 .card-details strong {
   color: var(--gray-800);
   font-weight: 600;
+  margin-right: var(--spacing-sm);
 }
 
 .card-actions {
@@ -564,6 +593,9 @@ body {
   border-bottom: 2px solid var(--gray-100);
   background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .modal-header h2 {
@@ -587,6 +619,7 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
+  line-height: 1;
 }
 
 .btn-close:hover {
@@ -686,6 +719,9 @@ body {
   border-top: 2px solid var(--gray-100);
   background: var(--gray-50);
   flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
 .modal-actions .btn {
@@ -750,7 +786,8 @@ body {
   color: #065f46;
 }
 
-.days-until.expiring-soon {
+.days-until.expiringSoon,
+.days-until.expiring-soon { /* Support both */
   background: rgba(245, 158, 11, 0.1);
   color: #92400e;
 }
@@ -761,7 +798,7 @@ body {
 }
 
 /* ========================================
-   SEARCH FUNCTIONALITY
+   SEARCH FUNCTIONALITY (in modal)
    ======================================== */
 
 .search-wrapper {
@@ -809,8 +846,10 @@ body {
   border-bottom: 1px solid var(--gray-100);
 }
 
-.search-result-item:hover {
+.search-result-item:hover,
+.search-result-item:focus {
   background: var(--primary-light);
+  outline: none;
 }
 
 .search-result-item:last-child {
@@ -966,11 +1005,53 @@ body {
 .required-badge {
   color: var(--danger);
   font-weight: 700;
+  margin-left: 4px;
 }
 
 .auto-filled {
   background: var(--primary-light);
   border-color: var(--primary);
+}
+
+/* ========================================
+   PWA INSTALL PROMPT
+   ======================================== */
+.install-prompt {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--gray-800);
+  color: white;
+  padding: var(--spacing-md);
+  z-index: 2000;
+  box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+  animation: slideUp 0.5s ease-out;
+}
+
+.install-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.btn-install {
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn-install:hover {
+  background: var(--primary-dark);
 }
 
 /* ========================================
@@ -1027,7 +1108,7 @@ body {
 
   .modal {
     width: 95%;
-    max-width: 90%;
+    max-height: 95vh;
   }
 
   .card-actions {
@@ -1038,9 +1119,9 @@ body {
     width: 100%;
   }
 
-  .btn {
+  /* .btn {
     width: 100%;
-  }
+  } */
 
   .filter-search-bar {
     flex-direction: column;
@@ -1049,7 +1130,7 @@ body {
 
   .filter-select,
   .search-input,
-  .btn {
+  .filter-search-bar .btn {
     width: 100%;
   }
 
@@ -1085,6 +1166,11 @@ body {
 
   .suggestion-details {
     font-size: 11px;
+  }
+
+  .install-content {
+    flex-direction: column;
+    text-align: center;
   }
 }
 
@@ -1162,13 +1248,40 @@ body {
    ======================================== */
 
 @media print {
+  body {
+    background: #fff;
+  }
+  
   .dashboard-header,
-  .action-bar {
+  .action-bar,
+  .filter-search-bar,
+  .card-actions,
+  .install-prompt {
     display: none;
   }
 
   .modal-overlay {
     display: none;
+  }
+
+  .dashboard-container {
+    background: none;
+  }
+
+  .dashboard-content {
+    padding: 0;
+  }
+  
+  .stat-card,
+  .grocery-card {
+    box-shadow: none;
+    border: 1px solid var(--gray-200);
+    page-break-inside: avoid;
+  }
+  
+  .groceries-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
   }
 }
 
@@ -1177,6 +1290,106 @@ body {
    ======================================== */
 
 @media (prefers-color-scheme: dark) {
+  .dashboard-container {
+    background: var(--gray-900);
+  }
+  
+  .stat-card,
+  .filter-search-bar,
+  .loading-state,
+  .empty-state {
+    background: var(--gray-800);
+    border-color: var(--primary);
+  }
+  
+  .stat-card h3 {
+    color: var(--gray-400);
+  }
+  
+  .grocery-card {
+    background: var(--gray-800);
+    border-color: var(--primary);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  }
+  
+  .card-header {
+    border-bottom-color: var(--gray-700);
+  }
+  
+  .card-header h3 {
+    color: var(--gray-100);
+  }
+  
+  .card-details p {
+    color: var(--gray-300);
+  }
+  
+  .card-details strong {
+    color: var(--gray-100);
+  }
+
+  .modal {
+    background: var(--gray-800);
+  }
+
+  .modal-header,
+  .modal-actions {
+    background: var(--gray-800);
+    border-bottom-color: var(--gray-700);
+  }
+  
+  .modal-actions {
+    border-top-color: var(--gray-700);
+  }
+
+  .modal-header h2 {
+    color: var(--gray-100);
+  }
+  
+  .modal-body p {
+    color: var(--gray-300);
+  }
+
+  .form-group label {
+    color: var(--gray-200);
+  }
+
+  .form-input,
+  .filter-select,
+  .search-input {
+    background: var(--gray-700);
+    border-color: var(--gray-600);
+    color: var(--gray-100);
+  }
+
+  .form-input:focus,
+  .filter-select:focus,
+  .search-input:focus {
+    background: var(--gray-700);
+  }
+  
+  .form-input:hover:not(:focus) {
+    border-color: var(--gray-500);
+    background: var(--gray-700);
+  }
+
+  .auto-expiration-group {
+    background: var(--gray-900);
+    border-color: var(--gray-700);
+  }
+
+  .suggestion-info {
+    background: var(--gray-800);
+  }
+
+  .suggestion-date {
+    color: var(--gray-200);
+  }
+
+  .suggestion-details {
+    color: var(--gray-400);
+  }
+
   .search-results {
     background: var(--gray-800);
     border-color: var(--primary);
@@ -1186,7 +1399,8 @@ body {
     border-bottom-color: var(--gray-700);
   }
 
-  .search-result-item:hover {
+  .search-result-item:hover,
+  .search-result-item:focus {
     background: var(--gray-700);
   }
 
@@ -1197,13 +1411,13 @@ body {
   .product-info small {
     color: var(--gray-400);
   }
-
-  .auto-expiration-group {
-    background: var(--gray-800);
-    border-color: var(--gray-700);
-  }
-
-  .suggestion-info {
+  
+  .product-image-placeholder {
     background: var(--gray-700);
+  }
+  
+  .search-empty,
+  .search-loading {
+    color: var(--gray-400);
   }
 }

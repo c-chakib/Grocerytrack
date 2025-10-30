@@ -9,6 +9,14 @@ export const routes: Routes = [
     pathMatch: 'full'
   },
   {
+  path: 'analytics',
+  loadComponent: () =>
+    import('./pages/analytics/analytics.component').then(
+      (m) => m.AnalyticsComponent
+    ),
+  canActivate: [AuthGuard]
+},
+  {
     path: 'login',
     loadComponent: () =>
       import('./pages/login/login.component').then((m) => m.LoginComponent)
@@ -32,4 +40,5 @@ export const routes: Routes = [
     path: '**',
     redirectTo: 'login'
   }
+  
 ];

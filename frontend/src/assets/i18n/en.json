@@ -26,6 +26,7 @@
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome back",
+    "notes": "Notes",
     "addGrocery": "Add Grocery",
     "search": "Search groceries...",
     "filterByCategory": "Filter by category",
@@ -87,6 +88,8 @@
     "expiringSoon": "Expiring Soon",
     "expired": "Expired"
   },
+  "notes": "Notes",
+  "unit": "Unit",
   "language": {
     "english": "English",
     "french": "Français",

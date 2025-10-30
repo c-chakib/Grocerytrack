@@ -1,0 +1,81 @@
+<nav class="navbar" role="navigation" aria-label="Main navigation">
+  <div class="navbar-container">
+    <a class="navbar-brand" routerLink="/dashboard" aria-label="Home">
+      🥬 {{ 'app.title' | translate }}
+    </a>
+
+    <button 
+      class="hamburger" 
+      [class.active]="menuOpen"
+      (click)="toggleMenu()"
+      aria-label="Toggle navigation menu"
+      [attr.aria-expanded]="menuOpen"
+      type="button">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="navbar-menu" [class.active]="menuOpen">
+      <ul class="navbar-list">
+        <li>
+          <a routerLink="/dashboard" 
+             routerLinkActive="active" 
+             (click)="closeMenu()"
+             tabindex="0">
+            Dashboard
+          </a>
+        </li>
+        <li>
+          <a routerLink="/analytics" 
+             routerLinkActive="active" 
+             (click)="closeMenu()"
+             tabindex="0">
+            Analytics
+          </a>
+        </li>
+        <li *ngIf="!isAuthenticated">
+          <a routerLink="/login" 
+             routerLinkActive="active" 
+             (click)="closeMenu()"
+             tabindex="0">
+            Login
+          </a>
+        </li>
+        <li *ngIf="!isAuthenticated">
+          <a routerLink="/register" 
+             routerLinkActive="active" 
+             (click)="closeMenu()"
+             tabindex="0">
+            Register
+          </a>
+        </li>
+      </ul>
+
+      <div class="navbar-user">
+        <div class="language-switcher-wrapper">
+          <app-language-switcher></app-language-switcher>
+        </div>
+        
+        <span class="user-info" *ngIf="isAuthenticated" aria-label="Current user">
+          👋 {{ userName }}
+        </span>
+        
+        <button 
+          class="btn-logout" 
+          *ngIf="isAuthenticated" 
+          (click)="logout(); closeMenu()"
+          aria-label="Logout"
+          type="button">
+          {{ 'auth.logout' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <div class="menu-backdrop" 
+         [class.active]="menuOpen" 
+         (click)="closeMenu()"
+         aria-hidden="true">
+    </div>
+  </div>
+</nav>

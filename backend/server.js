@@ -10,6 +10,10 @@ import { logger } from './src/utils/logger.js';
 import { createServer } from 'http'; 
 import { initializeSocket } from './src/config/socket.js'
 import productRoutes from './src/routes/productRoutes.js';
+import notificationService from './src/services/notificationService.js';
+import analyticsRoutes from './src/routes/analyticsRoutes.js';
+
+
 
 
 // Load environment variables
@@ -52,6 +56,9 @@ const connectDB = async () => {
   }
 };
 connectDB();
+// ===== NOTIFICATION SERVICE =====
+notificationService.initializeCronJobs();
+
 // ===== REQUEST LOGGING =====
 app.use((req, res, next) => {
   const start = Date.now();
@@ -71,7 +78,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/groceries', groceryRoutes);
 app.use('/api/products', productRoutes);
-
+app.use('/api/analytics', analyticsRoutes);
 // ===== HEALTH CHECK =====
 app.get('/api/health', (req, res) => {
   res.json({

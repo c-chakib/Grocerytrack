@@ -5,6 +5,8 @@ import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { ApiError } from '../utils/apiError.js';
+import emailService from '../services/emailService.js';
+
 
 // Generate JWT token
 const generateToken = (userId) => {
@@ -35,6 +37,10 @@ export const register = async (req, res, next) => {
     const user = new User({ email, password, name });
     await user.save();
 
+    // Send welcome email (don't wait for it)
+emailService.sendWelcomeEmail(user).catch(err => 
+  console.error('Welcome email failed:', err)
+);
     // Generate token
     const token = generateToken(user._id);
 
