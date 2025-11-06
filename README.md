@@ -96,7 +96,6 @@ GROCERYTRACK/
 │   ├── src/
 │   ├── angular.json
 │   └── ...
-├── personnal/   # Ignored (private files)
 └── README.md
 ```
 
